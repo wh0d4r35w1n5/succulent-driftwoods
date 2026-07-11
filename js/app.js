@@ -232,12 +232,16 @@
     setFormLoading(true);
 
     try {
-      const res = await fetch(form.action, {
+      const data = Object.fromEntries(formData.entries());
+
+      const res = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
-        body: formData
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(data)
       });
 
-      if (!res.ok) throw new Error('Submission failed');
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error('Submission failed');
 
       showBookingSuccess(`${workshopDate} · ${guests}`);
     } catch {
