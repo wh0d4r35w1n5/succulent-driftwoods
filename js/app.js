@@ -192,7 +192,6 @@
     submitBtn.disabled = loading;
     btnText.hidden = loading;
     btnLoading.hidden = !loading;
-    btnText.textContent = loading ? 'Confirm booking' : btnText.textContent;
   }
 
   function showBookingSuccess(detail) {
@@ -200,7 +199,10 @@
     bookingModal.removeAttribute('hidden');
     requestAnimationFrame(() => bookingModal.classList.add('open'));
     document.body.style.overflow = 'hidden';
+    submitBtn.disabled = true;
     btnText.textContent = 'Sent';
+    btnText.hidden = false;
+    btnLoading.hidden = true;
     form.reset();
   }
 
@@ -210,6 +212,8 @@
     setTimeout(() => {
       bookingModal.setAttribute('hidden', '');
       btnText.textContent = 'Confirm Booking';
+      btnText.hidden = false;
+      btnLoading.hidden = true;
       submitBtn.disabled = false;
     }, 300);
   }
