@@ -20,7 +20,7 @@
     'photo_46_2026-07-07_19-43-48.jpg','photo_47_2026-07-07_19-43-48.jpg','photo_48_2026-07-07_19-43-48.jpg',
     'photo_49_2026-07-07_19-43-48.jpg','photo_50_2026-07-07_19-43-48.jpg','photo_51_2026-07-07_19-43-48.jpg',
     'photo_52_2026-07-07_19-43-48.jpg','photo_53_2026-07-07_19-43-48.jpg','photo_54_2026-07-07_19-43-48.jpg',
-    'photo_55_2026-07-07_19-43-48.jpg','photo_56_2026-07-07_19-43-48.jpg','photo_57_2026-07-07_19-43-48.jpg',
+    'photo_55_2026-07-07_19-43-48.jpg','photo_56_2026-07-07_19-43-48.jpg','photo_57_2026-07-07_19-43-48.png',
     'photo_58_2026-07-07_19-43-48.jpg','photo_59_2026-07-07_19-43-48.jpg','photo_60_2026-07-07_19-43-48.jpg',
     'photo_61_2026-07-07_19-43-48.jpg','photo_62_2026-07-07_19-43-48.jpg','photo_63_2026-07-07_19-43-48.jpg',
     'photo_64_2026-07-07_19-43-48.jpg','photo_65_2026-07-07_19-43-48.jpg','photo_66_2026-07-07_19-43-48.jpg',
@@ -207,7 +207,11 @@
   function closeBookingModal() {
     bookingModal.classList.remove('open');
     document.body.style.overflow = '';
-    setTimeout(() => bookingModal.setAttribute('hidden', ''), 300);
+    setTimeout(() => {
+      bookingModal.setAttribute('hidden', '');
+      btnText.textContent = 'Confirm Booking';
+      submitBtn.disabled = false;
+    }, 300);
   }
 
   bookingModalClose.addEventListener('click', closeBookingModal);
@@ -237,11 +241,10 @@
 
       showBookingSuccess(`${workshopDate} · ${guests}`);
     } catch {
-      btnText.textContent = 'Confirm booking';
+      setFormLoading(false);
+      btnText.textContent = 'Confirm Booking';
       formError.hidden = false;
       form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    } finally {
-      setFormLoading(false);
     }
   });
 })();
