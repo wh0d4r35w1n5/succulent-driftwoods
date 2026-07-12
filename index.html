@@ -317,7 +317,7 @@
             <span class="btn-text">Confirm booking</span>
             <span class="btn-loading" hidden>Sending...</span>
           </button>
-          <p class="form-note">Linda receives an email notification instantly. You'll see booking confirmation after sending. No payment required now — pay on the day.</p>
+          <p class="form-note">Secure payment via Square after confirming. Linda receives an instant notification. 5+ guests — Linda will confirm pricing.</p>
           <p class="form-error" id="form-error" hidden>Something went wrong. Please call <a href="tel:+61422879921">0422 879 921</a> or email Linda directly.</p>
         </form>
         <!-- Hidden form for Linda's BCC via FormSubmit -->
@@ -367,9 +367,10 @@
     <div class="booking-modal-card">
       <div class="thank-you-icon" aria-hidden="true">✓</div>
       <h2 id="booking-modal-title">Booking confirmed!</h2>
-      <p>Your request has been sent to Linda. She'll confirm your Saturday spot shortly.</p>
+      <p>Your request has been sent. Linda will confirm your Saturday spot shortly.</p>
       <p class="booking-modal-detail" id="booking-modal-detail"></p>
-      <button type="button" class="btn btn-primary" id="booking-modal-close">Wonderful</button>
+      <a href="#" class="btn btn-primary" id="booking-modal-pay" target="_blank" rel="noopener">Pay Now</a>
+      <button type="button" class="btn btn-ghost" id="booking-modal-close" style="margin-top:0.5rem">Close</button>
     </div>
   </div>
 

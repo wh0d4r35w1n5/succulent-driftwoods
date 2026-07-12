@@ -178,7 +178,15 @@
     dateSelect.appendChild(opt);
   }
 
-  // ── Booking form (Formsubmit.co) ──
+  // ── Booking form + Square payments ──
+  const SQUARE_PAYMENT_LINKS = {
+    '1 guest - $100': 'https://square.link/u/uqVOkXIn',
+    '2 guests - $200': 'https://square.link/u/H0RSG1gA',
+    '3 guests - $300': 'https://square.link/u/xCE5Ol4C',
+    '4 guests - $400': 'https://square.link/u/mDzg0gam',
+    '5+ guests - Linda will confirm': null
+  };
+
   const form = document.getElementById('book-form');
   const submitBtn = document.getElementById('book-submit');
   const btnText = submitBtn.querySelector('.btn-text');
@@ -187,6 +195,7 @@
   const bookingModal = document.getElementById('booking-modal');
   const bookingModalDetail = document.getElementById('booking-modal-detail');
   const bookingModalClose = document.getElementById('booking-modal-close');
+  const bookingModalPay = document.getElementById('booking-modal-pay');
 
   function setFormLoading(loading) {
     submitBtn.disabled = loading;
@@ -194,8 +203,16 @@
     btnLoading.hidden = !loading;
   }
 
-  function showBookingSuccess(detail) {
+  function showBookingSuccess(detail, guestsKey) {
     bookingModalDetail.textContent = detail;
+    const payUrl = SQUARE_PAYMENT_LINKS[guestsKey];
+    if (payUrl) {
+      bookingModalPay.href = payUrl;
+      bookingModalPay.hidden = false;
+      bookingModalPay.textContent = 'Pay Now';
+    } else {
+      bookingModalPay.hidden = true;
+    }
     bookingModal.removeAttribute('hidden');
     requestAnimationFrame(() => bookingModal.classList.add('open'));
     document.body.style.overflow = 'hidden';
@@ -258,7 +275,7 @@
       bccForm.querySelector('[name="message"]').value = data.message || '';
       bccForm.submit();
 
-      showBookingSuccess(`${workshopDate} · ${guests}`);
+      showBookingSuccess(`${workshopDate} · ${guests}`, guests);
     } catch {
       setFormLoading(false);
       btnText.textContent = 'Confirm Booking';
