@@ -52,23 +52,9 @@
   }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
   revealEls.forEach(el => revealObs.observe(el));
 
-  // ── Gallery video lazy-load + autoplay on scroll ──
+  // ── Gallery video: pause when out of view ──
   const galleryVideo = document.getElementById('gallery-video');
   if (galleryVideo) {
-    const videoObs = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          // Load the video source
-          galleryVideo.preload = 'auto';
-          galleryVideo.load();
-          galleryVideo.play().catch(() => {});
-          videoObs.unobserve(galleryVideo);
-        }
-      });
-    }, { threshold: 0.3 });
-    videoObs.observe(galleryVideo);
-
-    // Pause when out of view to save resources
     const pauseObs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
