@@ -180,11 +180,11 @@
 
   // ── Booking form + Square payments ──
   const SQUARE_PAYMENT_LINKS = {
-    '1 guest - $100': 'https://square.link/u/uqVOkXIn',
-    '2 guests - $200': 'https://square.link/u/H0RSG1gA',
-    '3 guests - $300': 'https://square.link/u/xCE5Ol4C',
-    '4 guests - $400': 'https://square.link/u/mDzg0gam',
-    '5+ guests - Linda will confirm': 'https://square.link/u/QNgVpvFE'
+    '1 guest \u2014 $100': 'https://square.link/u/uqVOkXIn',
+    '2 guests \u2014 $200': 'https://square.link/u/H0RSG1gA',
+    '3 guests \u2014 $300': 'https://square.link/u/xCE5Ol4C',
+    '4 guests \u2014 $400': 'https://square.link/u/mDzg0gam',
+    '5+ guests \u2014 Linda will confirm': 'https://square.link/u/QNgVpvFE'
   };
 
   const form = document.getElementById('book-form');
