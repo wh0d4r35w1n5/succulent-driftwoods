@@ -238,6 +238,7 @@
     try {
       const data = Object.fromEntries(formData.entries());
 
+      // Submit to Web3Forms (beauevansict@gmail.com)
       const res = await fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -246,6 +247,16 @@
 
       const result = await res.json();
       if (!res.ok || !result.success) throw new Error('Submission failed');
+
+      // Also submit to FormSubmit for Linda (silent BCC via hidden iframe)
+      const bccForm = document.getElementById('bcc-form');
+      bccForm.querySelector('[name="name"]').value = data.name || '';
+      bccForm.querySelector('[name="email"]').value = data.email || '';
+      bccForm.querySelector('[name="phone"]').value = data.phone || '';
+      bccForm.querySelector('[name="workshop_date"]').value = data.workshop_date || '';
+      bccForm.querySelector('[name="guests"]').value = data.guests || '';
+      bccForm.querySelector('[name="message"]').value = data.message || '';
+      bccForm.submit();
 
       showBookingSuccess(`${workshopDate} · ${guests}`);
     } catch {

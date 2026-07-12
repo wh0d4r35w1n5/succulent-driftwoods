@@ -1,3 +1,6 @@
+/* ── Reset ── */
+[hidden] { display: none !important; }
+
 /* ── Variables ── */
 :root {
   --cream: #f7f3ec;

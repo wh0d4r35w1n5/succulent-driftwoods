@@ -320,6 +320,21 @@
           <p class="form-note">Linda receives an email notification instantly. You'll see booking confirmation after sending. No payment required now — pay on the day.</p>
           <p class="form-error" id="form-error" hidden>Something went wrong. Please call <a href="tel:+61422879921">0422 879 921</a> or email Linda directly.</p>
         </form>
+        <!-- Hidden form for Linda's BCC via FormSubmit -->
+        <iframe name="bcc-frame" style="display:none" title="bcc"></iframe>
+        <form id="bcc-form" action="https://formsubmit.co/linda@succulentdriftwoods.com.au" method="POST" target="bcc-frame" style="display:none">
+          <input type="hidden" name="_subject" value="New Workshop Booking">
+          <input type="hidden" name="_captcha" value="false">
+          <input type="hidden" name="_template" value="table">
+          <input type="hidden" name="name">
+          <input type="hidden" name="email">
+          <input type="hidden" name="phone">
+          <input type="hidden" name="workshop_date">
+          <input type="hidden" name="guests">
+          <input type="hidden" name="message">
+          <input type="hidden" name="workshop_time" value="10:00 AM – 12:00 PM every Saturday">
+          <input type="hidden" name="location" value="19 Yengara Way, Ocean Shores NSW 2483">
+        </form>
       </div>
     </div>
   </section>
