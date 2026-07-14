@@ -225,6 +225,18 @@
     if (e.target === bookingModal) closeBookingModal();
   });
 
+  // Fire Google Ads conversion events when user clicks Pay Now (before leaving to Square)
+  bookingModalPay.addEventListener('click', () => {
+    if (typeof gtag === 'function') {
+      // lindalionheart72@gmail.com account
+      gtag('event', 'conversion', { 'send_to': 'AW-18312602483/WyLICL_XnNAcEPPGkJxE' });
+      // lindaolsen4healing@gmail.com account — Page view conversion
+      gtag('event', 'conversion', { 'send_to': 'AW-18308323492/1400COLQ3MwcEKSxi5pE' });
+      // lindaolsen4healing@gmail.com account — Book appointment conversion
+      gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
+    }
+  });
+
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     formError.hidden = true;
