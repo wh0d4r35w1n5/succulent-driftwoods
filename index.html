@@ -289,9 +289,9 @@
         </div>
         <div class="book-form reveal reveal-delay">
           <div id="book-success">✓ Payment received — your spot is confirmed! Check your email for a receipt from Square.</div>
-          <p class="lead" style="margin-top:0">Choose the number of guests on the Square payment page, then complete payment securely. After booking, email or call Linda with your preferred Saturday so she can confirm your spot.</p>
+          <p class="lead" style="margin-top:0">Complete payment securely with Square. After booking, email or call Linda with your preferred Saturday and guest count so she can confirm your spot.</p>
           <a href="#" id="bf-square-link" class="btn btn-primary btn-full" data-square-link="" target="_blank" rel="noopener">Book &amp; Pay Now with Square →</a>
-          <p class="form-note" style="margin-top:1rem">Secure payment via Square · $100 per person · guest quantity selectable at checkout</p>
+          <p class="form-note" style="margin-top:1rem">Secure payment via Square · $100 per person · book once per guest — email Linda with total guest count</p>
         </div>
       </div>
     </div>
@@ -337,7 +337,7 @@
       history.replaceState(null,'',location.pathname);
     }
     // TODO: replace with the real Square Payment Link URL once available
-    var SQUARE_LINK='';
+    var SQUARE_LINK='https://square.link/u/5tsKU8qf';
     var link=document.getElementById('bf-square-link');
     if(link){
       if(SQUARE_LINK){

@@ -1,2 +1,7 @@
 # Local Netlify folder
 .netlify
+
+# Local secrets - never commit
+.square_token
+*.token
+payment_link_body.json
