@@ -5,3 +5,4 @@
 .square_token
 *.token
 payment_link_body.json
+catalog_update_body.json
