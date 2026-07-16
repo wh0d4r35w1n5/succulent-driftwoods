@@ -163,121 +163,18 @@
     dateSelect.appendChild(opt);
   }
 
-  // ── Booking form + Square payments ──
-  const SQUARE_PAYMENT_LINKS = {
-    '1 guest - $100': 'https://square.link/u/uqVOkXIn',
-    '2 guests - $200': 'https://square.link/u/H0RSG1gA',
-    '3 guests - $300': 'https://square.link/u/xCE5Ol4C',
-    '4 guests - $400': 'https://square.link/u/mDzg0gam',
-    '5+ guests - Linda will confirm': 'https://square.link/u/QNgVpvFE'
-  };
-
-  const form = document.getElementById('book-form');
-  const submitBtn = document.getElementById('book-submit');
-  const btnText = submitBtn.querySelector('.btn-text');
-  const btnLoading = submitBtn.querySelector('.btn-loading');
-  const formError = document.getElementById('form-error');
-  const bookingModal = document.getElementById('booking-modal');
-  const bookingModalDetail = document.getElementById('booking-modal-detail');
-  const bookingModalClose = document.getElementById('booking-modal-close');
-  const bookingModalPay = document.getElementById('booking-modal-pay');
-
-  function setFormLoading(loading) {
-    submitBtn.disabled = loading;
-    btnText.hidden = loading;
-    btnLoading.hidden = !loading;
+  // ── Stripe booking button — fire Google Ads conversions on click ──
+  const stripeBtn = document.getElementById('stripe-book-btn');
+  if (stripeBtn) {
+    stripeBtn.addEventListener('click', () => {
+      if (typeof gtag === 'function') {
+        // lindalionheart72@gmail.com account
+        gtag('event', 'conversion', { 'send_to': 'AW-18312602483/WyLICL_XnNAcEPPGkJxE' });
+        // lindaolsen4healing@gmail.com account — Page view conversion
+        gtag('event', 'conversion', { 'send_to': 'AW-18308323492/1400COLQ3MwcEKSxi5pE' });
+        // lindaolsen4healing@gmail.com account — Book appointment conversion
+        gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
+      }
+    });
   }
-
-  function showBookingSuccess(detail, guestsKey) {
-    bookingModalDetail.textContent = detail;
-    const payUrl = SQUARE_PAYMENT_LINKS[guestsKey];
-    if (payUrl) {
-      bookingModalPay.href = payUrl;
-      bookingModalPay.hidden = false;
-      bookingModalPay.textContent = 'Pay Now';
-    } else {
-      bookingModalPay.hidden = true;
-    }
-    bookingModal.removeAttribute('hidden');
-    requestAnimationFrame(() => bookingModal.classList.add('open'));
-    document.body.style.overflow = 'hidden';
-    submitBtn.disabled = true;
-    btnText.textContent = 'Sent';
-    btnText.hidden = false;
-    btnLoading.hidden = true;
-    form.reset();
-  }
-
-  function closeBookingModal() {
-    bookingModal.classList.remove('open');
-    document.body.style.overflow = '';
-    setTimeout(() => {
-      bookingModal.setAttribute('hidden', '');
-      btnText.textContent = 'Confirm Booking';
-      btnText.hidden = false;
-      btnLoading.hidden = true;
-      submitBtn.disabled = false;
-    }, 300);
-  }
-
-  bookingModalClose.addEventListener('click', closeBookingModal);
-  bookingModal.addEventListener('click', (e) => {
-    if (e.target === bookingModal) closeBookingModal();
-  });
-
-  // Fire Google Ads conversion events when user clicks Pay Now (before leaving to Square)
-  bookingModalPay.addEventListener('click', () => {
-    if (typeof gtag === 'function') {
-      // lindalionheart72@gmail.com account
-      gtag('event', 'conversion', { 'send_to': 'AW-18312602483/WyLICL_XnNAcEPPGkJxE' });
-      // lindaolsen4healing@gmail.com account — Page view conversion
-      gtag('event', 'conversion', { 'send_to': 'AW-18308323492/1400COLQ3MwcEKSxi5pE' });
-      // lindaolsen4healing@gmail.com account — Book appointment conversion
-      gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
-    }
-  });
-
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    formError.hidden = true;
-
-    if (!form.reportValidity()) return;
-
-    const formData = new FormData(form);
-    const workshopDate = formData.get('workshop_date');
-    const guests = formData.get('guests');
-
-    setFormLoading(true);
-
-    try {
-      const data = Object.fromEntries(formData.entries());
-
-      // Submit to Web3Forms (beauevansict@gmail.com)
-      const res = await fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify(data)
-      });
-
-      const result = await res.json();
-      if (!res.ok || !result.success) throw new Error('Submission failed');
-
-      // Also submit to FormSubmit for Linda (silent BCC via hidden iframe)
-      const bccForm = document.getElementById('bcc-form');
-      bccForm.querySelector('[name="name"]').value = data.name || '';
-      bccForm.querySelector('[name="email"]').value = data.email || '';
-      bccForm.querySelector('[name="phone"]').value = data.phone || '';
-      bccForm.querySelector('[name="workshop_date"]').value = data.workshop_date || '';
-      bccForm.querySelector('[name="guests"]').value = data.guests || '';
-      bccForm.querySelector('[name="message"]').value = data.message || '';
-      bccForm.submit();
-
-      showBookingSuccess(`${workshopDate} · ${guests}`, guests);
-    } catch {
-      setFormLoading(false);
-      btnText.textContent = 'Confirm Booking';
-      formError.hidden = false;
-      form.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  });
 })();

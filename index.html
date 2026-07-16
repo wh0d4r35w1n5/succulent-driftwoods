@@ -284,70 +284,13 @@
             <a href="mailto:linda@succulentdriftwoods.com.au?subject=Workshop%20booking%20enquiry" class="btn btn-ghost-light">✉️ Email Linda</a>
           </div>
         </div>
-        <form class="book-form reveal reveal-delay" id="book-form" name="booking" novalidate>
-          <input type="hidden" name="access_key" value="eb7bb983-1b60-4925-918d-60199d7479b8">
-          <input type="hidden" name="subject" value="New Workshop Booking">
-          <input type="hidden" name="from_name" value="Succulent Driftwoods Website">
-          <input type="hidden" name="workshop_time" value="10:00 AM – 12:00 PM every Saturday">
-          <input type="hidden" name="location" value="19 Yengara Way, Ocean Shores NSW 2483">
-
-          <div class="form-group">
-            <label for="name">Your name</label>
-            <input type="text" id="name" name="name" required autocomplete="name" placeholder="First & last name">
-          </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label for="email">Email</label>
-              <input type="email" id="email" name="email" required autocomplete="email" placeholder="you@email.com">
-            </div>
-            <div class="form-group">
-              <label for="phone">Phone</label>
-              <input type="tel" id="phone" name="phone" required autocomplete="tel" placeholder="04XX XXX XXX">
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="workshop_date">Choose your Saturday</label>
-            <select id="workshop_date" name="workshop_date" required>
-              <option value="" disabled selected>Select a date…</option>
-            </select>
-            <p class="field-hint">10:00 AM – 12:00 PM · 19 Yengara Way, Ocean Shores</p>
-          </div>
-          <div class="form-group">
-            <label for="guests">Number of guests</label>
-            <select id="guests" name="guests" required>
-              <option value="1 guest - $100">1 guest - $100</option>
-              <option value="2 guests - $200">2 guests - $200</option>
-              <option value="3 guests - $300">3 guests - $300</option>
-              <option value="4 guests - $400">4 guests - $400</option>
-              <option value="5+ guests - Linda will confirm">5+ guests - enquire</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="message">Message <span class="optional">(optional)</span></label>
-            <textarea id="message" name="message" rows="3" placeholder="Any questions or special requests?"></textarea>
-          </div>
-          <button type="submit" class="btn btn-primary btn-full" id="book-submit">
-            <span class="btn-text">Confirm booking</span>
-            <span class="btn-loading" hidden>Sending...</span>
-          </button>
-          <p class="form-note">Secure payment via Square after confirming. Linda receives an instant notification.</p>
-          <p class="form-error" id="form-error" hidden>Something went wrong. Please call <a href="tel:+61422879921">0422 879 921</a> or email Linda directly.</p>
-        </form>
-        <!-- Hidden form for Linda's BCC via FormSubmit -->
-        <iframe name="bcc-frame" style="display:none" title="bcc"></iframe>
-        <form id="bcc-form" action="https://formsubmit.co/linda@succulentdriftwoods.com.au" method="POST" target="bcc-frame" style="display:none">
-          <input type="hidden" name="_subject" value="New Workshop Booking">
-          <input type="hidden" name="_captcha" value="false">
-          <input type="hidden" name="_template" value="table">
-          <input type="hidden" name="name">
-          <input type="hidden" name="email">
-          <input type="hidden" name="phone">
-          <input type="hidden" name="workshop_date">
-          <input type="hidden" name="guests">
-          <input type="hidden" name="message">
-          <input type="hidden" name="workshop_time" value="10:00 AM – 12:00 PM every Saturday">
-          <input type="hidden" name="location" value="19 Yengara Way, Ocean Shores NSW 2483">
-        </form>
+        <div class="book-form reveal reveal-delay">
+          <p class="lead" style="margin-bottom:1.5rem">Click below to choose your date, number of guests, and pay securely — all on Stripe's checkout page. Linda receives an instant notification when your booking is confirmed.</p>
+          <a href="https://buy.stripe.com/fZu8wQ2Km78ubSy2NWbMQ00" target="_blank" rel="noopener" class="btn btn-primary btn-full" id="stripe-book-btn">
+            Book &amp; Pay Now — $100 per person
+          </a>
+          <p class="form-note" style="margin-top:1rem">Secure payment via Stripe · 1–4 guests · For groups of 5+ please <a href="mailto:linda@succulentdriftwoods.com.au">email Linda</a></p>
+        </div>
       </div>
     </div>
   </section>
@@ -373,19 +316,7 @@
   </footer>
 
   <!-- Mobile sticky CTA -->
-  <a href="#book" class="mobile-cta" aria-label="Book now">Book Now — $100</a>
-
-  <!-- Booking success modal -->
-  <div class="booking-modal" id="booking-modal" role="dialog" aria-modal="true" aria-labelledby="booking-modal-title" hidden>
-    <div class="booking-modal-card">
-      <div class="thank-you-icon" aria-hidden="true">✓</div>
-      <h2 id="booking-modal-title">Booking confirmed!</h2>
-      <p>Your request has been sent. Linda will confirm your Saturday spot shortly.</p>
-      <p class="booking-modal-detail" id="booking-modal-detail"></p>
-      <a href="#" class="btn btn-primary" id="booking-modal-pay" target="_blank" rel="noopener">Pay Now</a>
-      <button type="button" class="btn btn-ghost" id="booking-modal-close" style="margin-top:0.5rem">Close</button>
-    </div>
-  </div>
+  <a href="https://buy.stripe.com/fZu8wQ2Km78ubSy2NWbMQ00" target="_blank" rel="noopener" class="mobile-cta" aria-label="Book now">Book Now — $100</a>
 
   <!-- Lightbox -->
   <div class="lightbox" id="lightbox" role="dialog" aria-modal="true" aria-label="Photo viewer" hidden>
