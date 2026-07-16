@@ -25,16 +25,6 @@
     gtag('event', 'conversion', {'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE'});
   </script>
   <style>
-    .bf-row{margin-bottom:14px}
-    .bf-row label{display:block;font-size:14px;font-weight:600;margin-bottom:6px;color:inherit}
-    .bf-row select,.bf-row input{width:100%;box-sizing:border-box;padding:10px 12px;font-size:15px;border:1px solid #bbb;border-radius:6px;background:#fff;color:#111;font-family:inherit}
-    .bf-row select:focus,.bf-row input:focus{outline:2px solid #5a8a5a;border-color:#5a8a5a}
-    .bf-qty{display:flex;align-items:center;gap:10px}
-    .bf-qty button{width:36px;height:36px;border:1px solid #bbb;border-radius:6px;background:#fff;font-size:20px;line-height:1;cursor:pointer;flex-shrink:0}
-    .bf-qty button:hover{background:#f0f0f0}
-    .bf-qty .bf-num{font-size:16px;font-weight:600;min-width:24px;text-align:center}
-    .bf-qty .bf-total{margin-left:auto;font-weight:600;font-size:15px}
-    #bf-error{color:#c0392b;font-size:14px;margin-bottom:10px;display:none}
     #book-success{display:none;background:#d4edda;border:1px solid #a3d3a4;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a5c20;font-size:15px;font-weight:500}
   </style>
 </head>
@@ -285,7 +275,7 @@
         <div class="book-intro reveal">
           <p class="section-eyebrow">Ready?</p>
           <h2>Book your workshop</h2>
-          <p class="lead">Spots are limited for an intimate, hands-on experience. Choose your Saturday below — Linda receives an instant booking notification by email.</p>
+          <p class="lead">Spots are limited for an intimate, hands-on experience. Pay securely with Square, then confirm your preferred Saturday with Linda.</p>
           <ul class="book-perks">
             <li>Every Saturday · 10:00 AM – 12:00 PM</li>
             <li>First available: Saturday 25 July 2026</li>
@@ -299,37 +289,9 @@
         </div>
         <div class="book-form reveal reveal-delay">
           <div id="book-success">✓ Payment received — your spot is confirmed! Check your email for a receipt from Square.</div>
-          <form id="book-form" novalidate>
-            <div class="bf-row">
-              <label for="bf-date">Workshop date</label>
-              <select id="bf-date" required></select>
-            </div>
-            <div class="bf-row">
-              <label>Number of guests</label>
-              <div class="bf-qty">
-                <button type="button" id="bf-minus" aria-label="Decrease">−</button>
-                <span class="bf-num" id="bf-count">1</span>
-                <button type="button" id="bf-plus" aria-label="Increase">+</button>
-                <span class="bf-total" id="bf-total">$100 total</span>
-              </div>
-            </div>
-            <div id="bf-names"></div>
-            <div class="bf-row">
-              <label for="bf-your-name">Your name</label>
-              <input type="text" id="bf-your-name" placeholder="Full name" required>
-            </div>
-            <div class="bf-row">
-              <label for="bf-email">Email</label>
-              <input type="email" id="bf-email" placeholder="you@example.com" required>
-            </div>
-            <div class="bf-row">
-              <label for="bf-phone">Phone <span style="font-weight:400;color:#888">(optional)</span></label>
-              <input type="tel" id="bf-phone" placeholder="0400 000 000">
-            </div>
-            <div id="bf-error"></div>
-            <button type="submit" id="bf-submit" class="btn btn-primary btn-full">Book &amp; Pay with Square →</button>
-            <p class="form-note" style="margin-top:1rem">Secure payment via Square · $100 per person</p>
-          </form>
+          <p class="lead" style="margin-top:0">Choose the number of guests on the Square payment page, then complete payment securely. After booking, email or call Linda with your preferred Saturday so she can confirm your spot.</p>
+          <a href="#" id="bf-square-link" class="btn btn-primary btn-full" data-square-link="" target="_blank" rel="noopener">Book &amp; Pay Now with Square →</a>
+          <p class="form-note" style="margin-top:1rem">Secure payment via Square · $100 per person · guest quantity selectable at checkout</p>
         </div>
       </div>
     </div>
@@ -372,62 +334,21 @@
     if(location.search.includes('booked=1')){
       var s=document.getElementById('book-success');
       if(s){s.style.display='block';}
-      var f=document.getElementById('book-form');
-      if(f){f.style.display='none';}
       history.replaceState(null,'',location.pathname);
     }
-    var sessions=[];
-    var d=new Date('2026-07-25T00:00:00');
-    for(var i=0;i<12;i++){
-      var ds=d.toLocaleDateString('en-AU',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-      sessions.push({value:d.toISOString().slice(0,10),label:ds+' · 10:00 AM – 12:00 PM'});
-      d.setDate(d.getDate()+7);
-    }
-    var sel=document.getElementById('bf-date');
-    sessions.forEach(function(s){var o=document.createElement('option');o.value=s.value;o.textContent=s.label;sel.appendChild(o);});
-    var count=1;
-    function updateNames(){
-      var wrap=document.getElementById('bf-names');wrap.innerHTML='';
-      for(var i=0;i<count;i++){
-        var row=document.createElement('div');row.className='bf-row';
-        var lbl=document.createElement('label');lbl.textContent=count===1?'Guest name':'Guest '+(i+1)+' name';
-        var inp=document.createElement('input');inp.type='text';inp.placeholder='Full name';inp.required=true;
-        row.appendChild(lbl);row.appendChild(inp);wrap.appendChild(row);
-      }
-    }
-    function updateTotal(){document.getElementById('bf-total').textContent='
-</body>
-</html>
-+(count*100)+' total';}
-    document.getElementById('bf-minus').addEventListener('click',function(){if(count>1){count--;updateNames();updateTotal();}});
-    document.getElementById('bf-plus').addEventListener('click',function(){if(count<50){count++;updateNames();updateTotal();}});
-    updateNames();
-    document.getElementById('book-form').addEventListener('submit',async function(e){
-      e.preventDefault();
-      var errEl=document.getElementById('bf-error');errEl.style.display='none';errEl.textContent='';
-      var btn=document.getElementById('bf-submit');
-      var gInputs=document.querySelectorAll('#bf-names input');
-      var guests=[];
-      for(var i=0;i<gInputs.length;i++){
-        if(!gInputs[i].value.trim()){errEl.textContent='Please enter all guest names.';errEl.style.display='block';return;}
-        guests.push(gInputs[i].value.trim());
-      }
-      var name=document.getElementById('bf-your-name').value.trim();
-      var email=document.getElementById('bf-email').value.trim();
-      var phone=document.getElementById('bf-phone').value.trim();
-      if(!name){errEl.textContent='Please enter your name.';errEl.style.display='block';return;}
-      if(!email||!/S+@S+.S+/.test(email)){errEl.textContent='Please enter a valid email.';errEl.style.display='block';return;}
-      btn.textContent='Redirecting to Square…';btn.disabled=true;
-      try{
-        var res=await fetch('https://succulent-saturday-booking--beauevanslangou.replit.app/api/bookings',{
-          method:'POST',headers:{'Content-Type':'application/json'},
-          body:JSON.stringify({date:document.getElementById('bf-date').value,guests:guests,contactName:name,email:email,phone:phone})
+    // TODO: replace with the real Square Payment Link URL once available
+    var SQUARE_LINK='';
+    var link=document.getElementById('bf-square-link');
+    if(link){
+      if(SQUARE_LINK){
+        link.href=SQUARE_LINK;
+      } else {
+        link.addEventListener('click',function(e){
+          e.preventDefault();
+          alert('Online booking link is being set up. Please call 0422 879 921 or email linda@succulentdriftwoods.com.au to book.');
         });
-        var data=await res.json();
-        if(!res.ok||!data.checkoutUrl){errEl.textContent=data.error||'Something went wrong. Please try again.';errEl.style.display='block';btn.textContent='Book & Pay with Square →';btn.disabled=false;return;}
-        window.location.href=data.checkoutUrl;
-      }catch(err){errEl.textContent='Network error. Please check your connection and try again.';errEl.style.display='block';btn.textContent='Book & Pay with Square →';btn.disabled=false;}
-    });
+      }
+    }
   })();
   </script>
   <script src="js/app.js"></script>
