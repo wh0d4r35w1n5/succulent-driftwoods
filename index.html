@@ -288,10 +288,26 @@
           </div>
         </div>
         <div class="book-form reveal reveal-delay">
-          <div id="book-success">✓ Payment received — your spot is confirmed! Check your email for a receipt from Square.</div>
-          <p class="lead" style="margin-top:0">Choose your number of guests on the Square payment page, then complete payment securely. After booking, email or call Linda with your preferred Saturday so she can confirm your spot.</p>
-          <a href="#" id="bf-square-link" class="btn btn-primary btn-full" data-square-link="" target="_blank" rel="noopener">Book &amp; Pay Now with Square →</a>
-          <p class="form-note" style="margin-top:1rem">Secure payment via Square · $100 per person · guest quantity selectable at checkout</p>
+          <div id="book-success">✓ Payment received — your spot is confirmed! Check your email for a receipt from Stripe.</div>
+          <p class="lead" style="margin-top:0">Select your number of guests below, then proceed to secure payment. After booking, email or call Linda with your preferred Saturday so she can confirm your spot.</p>
+          <div class="form-group">
+            <label for="guest-quantity">Number of Guests</label>
+            <select id="guest-quantity">
+              <option value="1">1 guest — $100</option>
+              <option value="2">2 guests — $200</option>
+              <option value="3">3 guests — $300</option>
+              <option value="4">4 guests — $400</option>
+              <option value="5">5 guests — $500</option>
+              <option value="6">6 guests — $600</option>
+              <option value="7">7 guests — $700</option>
+              <option value="8">8 guests — $800</option>
+              <option value="9">9 guests — $900</option>
+              <option value="10">10 guests — $1,000</option>
+            </select>
+          </div>
+          <button id="stripe-checkout-btn" class="btn btn-primary btn-full">Book &amp; Pay Now with Stripe →</button>
+          <p class="form-note" style="margin-top:1rem">Secure payment via Stripe · $100 per person · all major cards accepted</p>
+          <p id="stripe-error" class="form-error" style="display:none;"></p>
         </div>
       </div>
     </div>
@@ -331,26 +347,66 @@
 
   <script>
   (function(){
-    if(location.search.includes('booked=1')){
+    // Handle success return from Stripe
+    if(location.search.includes('session_id=')){
       var s=document.getElementById('book-success');
       if(s){s.style.display='block';}
+      // Scroll to success message
+      setTimeout(function(){
+        s.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
       history.replaceState(null,'',location.pathname);
     }
-    // TODO: replace with the real Square Payment Link URL once available
-    var SQUARE_LINK='https://square.link/u/Yg8thAl4';
-    var link=document.getElementById('bf-square-link');
-    if(link){
-      if(SQUARE_LINK){
-        link.href=SQUARE_LINK;
-      } else {
-        link.addEventListener('click',function(e){
-          e.preventDefault();
-          alert('Online booking link is being set up. Please call 0422 879 921 or email linda@succulentdriftwoods.com.au to book.');
-        });
-      }
+    
+    // Stripe checkout handler
+    var btn = document.getElementById('stripe-checkout-btn');
+    var errorEl = document.getElementById('stripe-error');
+    var quantitySelect = document.getElementById('guest-quantity');
+    
+    if(btn){
+      btn.addEventListener('click', async function(e){
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+        errorEl.style.display = 'none';
+        
+        try {
+          const quantity = parseInt(quantitySelect.value, 10);
+          
+          // Call Netlify Function to create checkout session
+          const response = await fetch('/.netlify/functions/create-checkout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ quantity: quantity })
+          });
+          
+          if(!response.ok){
+            throw new Error('Failed to create checkout session');
+          }
+          
+          const data = await response.json();
+          
+          if(data.url){
+            // Redirect to Stripe Checkout
+            window.location.href = data.url;
+          } else {
+            throw new Error('No checkout URL returned');
+          }
+        } catch(err){
+          console.error('Checkout error:', err);
+          errorEl.textContent = 'Error: ' + err.message + '. Please try again or call 0422 879 921.';
+          errorEl.style.display = 'block';
+          btn.disabled = false;
+          btn.textContent = 'Book & Pay Now with Stripe →';
+        }
+      });
     }
   })();
   </script>
   <script src="js/app.js"></script>
+  <!-- Stripe public key for potential future client-side integrations -->
+  <script>
+    window.STRIPE_PUBLIC_KEY = '[Your Stripe Publishable Key]';
+  </script>
 </body>
 </html>
