@@ -8,6 +8,7 @@
     "build": "netlify build"
   },
   "dependencies": {
+    "square": "^45.0.1",
     "stripe": "^14.0.0"
   },
   "devDependencies": {

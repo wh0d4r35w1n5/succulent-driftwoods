@@ -288,26 +288,60 @@
           </div>
         </div>
         <div class="book-form reveal reveal-delay">
-          <div id="book-success">✓ Payment received — your spot is confirmed! Check your email for a receipt from Stripe.</div>
-          <p class="lead" style="margin-top:0">Select your number of guests below, then proceed to secure payment. After booking, email or call Linda with your preferred Saturday so she can confirm your spot.</p>
-          <div class="form-group">
-            <label for="guest-quantity">Number of Guests</label>
-            <select id="guest-quantity">
-              <option value="1">1 guest — $100</option>
-              <option value="2">2 guests — $200</option>
-              <option value="3">3 guests — $300</option>
-              <option value="4">4 guests — $400</option>
-              <option value="5">5 guests — $500</option>
-              <option value="6">6 guests — $600</option>
-              <option value="7">7 guests — $700</option>
-              <option value="8">8 guests — $800</option>
-              <option value="9">9 guests — $900</option>
-              <option value="10">10 guests — $1,000</option>
-            </select>
+          <div id="book-success" style="display:none;background:#d4edda;border:1px solid #a3d3a4;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a5c20;font-size:15px;font-weight:500">✓ Payment received — your spot is confirmed! Check your email for a receipt from Square.</div>
+          <div id="booking-form-container">
+            <p class="lead" style="margin-top:0">Select your preferred Saturday and number of guests below, then proceed to secure payment via Square.</p>
+            
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="session-date" style="display:block;margin-bottom:0.5rem;font-weight:600">Select Workshop Date</label>
+              <select id="session-date" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem">
+                <option value="">Choose a Saturday...</option>
+                <!-- Dates will be populated by JS -->
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="guest-quantity" style="display:block;margin-bottom:0.5rem;font-weight:600">Number of Guests</label>
+              <select id="guest-quantity" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem">
+                <option value="1">1 guest — $100</option>
+                <option value="2">2 guests — $200</option>
+                <option value="3">3 guests — $300</option>
+                <option value="4">4 guests — $400</option>
+                <option value="5">5 guests — $500</option>
+                <option value="6">6 guests — $600</option>
+                <option value="7">7 guests — $700</option>
+                <option value="8">8 guests — $800</option>
+                <option value="9">9 guests — $900</option>
+                <option value="10">10 guests — $1,000</option>
+              </select>
+            </div>
+
+            <div id="guest-names-container" style="margin-bottom:1.5rem">
+              <label style="display:block;margin-bottom:0.5rem;font-weight:600">Guest Names</label>
+              <div id="guest-names-inputs">
+                <input type="text" class="guest-name-input" placeholder="Guest 1 Name" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem;margin-bottom:0.5rem" required>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="booker-name" style="display:block;margin-bottom:0.5rem;font-weight:600">Your Name</label>
+              <input type="text" id="booker-name" placeholder="Full Name" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="booker-email" style="display:block;margin-bottom:0.5rem;font-weight:600">Email Address</label>
+              <input type="email" id="booker-email" placeholder="you@example.com" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem" required>
+            </div>
+
+            <div class="form-group" style="margin-bottom:1.5rem">
+              <label for="booker-phone" style="display:block;margin-bottom:0.5rem;font-weight:600">Phone Number (optional)</label>
+              <input type="tel" id="booker-phone" placeholder="0400 000 000" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem">
+            </div>
+
+            <button id="square-checkout-btn" class="btn btn-primary btn-full">Book &amp; Pay Now with Square →</button>
+            <p class="form-note" style="margin-top:1rem;font-size:0.9rem;opacity:0.8">Secure payment via Square · $100 per person · all major cards accepted</p>
+            <p id="checkout-error" class="form-error" style="display:none;color:#c00;margin-top:1rem;font-weight:500"></p>
           </div>
-          <button id="stripe-checkout-btn" class="btn btn-primary btn-full">Book &amp; Pay Now with Stripe →</button>
-          <p class="form-note" style="margin-top:1rem">Secure payment via Stripe · $100 per person · all major cards accepted</p>
-          <p id="stripe-error" class="form-error" style="display:none;"></p>
         </div>
       </div>
     </div>
@@ -347,48 +381,116 @@
 
   <script>
   (function(){
-    // Handle success return from Stripe
-    if(location.search.includes('session_id=')){
-      var s=document.getElementById('book-success');
-      if(s){s.style.display='block';}
-      // Scroll to success message
+    // Populate session dates
+    var sessionSelect = document.getElementById('session-date');
+    if(sessionSelect){
+      var startDate = new Date('2026-07-25');
+      for(var i=0; i<10; i++){
+        var d = new Date(startDate);
+        d.setDate(startDate.getDate() + (i * 7));
+        var dateStr = d.toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        var isoDate = d.toISOString().split('T')[0];
+        var option = document.createElement('option');
+        option.value = isoDate;
+        option.textContent = dateStr + ' (10:00 AM - 12:00 PM)';
+        sessionSelect.appendChild(option);
+      }
+    }
+
+    // Handle guest quantity change
+    var quantitySelect = document.getElementById('guest-quantity');
+    var namesContainer = document.getElementById('guest-names-inputs');
+    if(quantitySelect && namesContainer){
+      quantitySelect.addEventListener('change', function(){
+        var qty = parseInt(this.value, 10);
+        var currentInputs = namesContainer.querySelectorAll('input').length;
+        
+        if(qty > currentInputs){
+          for(var i = currentInputs + 1; i <= qty; i++){
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'guest-name-input';
+            input.placeholder = 'Guest ' + i + ' Name';
+            input.style.width = '100%';
+            input.style.padding = '0.8rem';
+            input.style.borderRadius = '6px';
+            input.style.border = '1px solid #ddd';
+            input.style.fontFamily = 'inherit';
+            input.style.fontSize = '1rem';
+            input.style.marginBottom = '0.5rem';
+            input.required = true;
+            namesContainer.appendChild(input);
+          }
+        } else {
+          var inputs = namesContainer.querySelectorAll('input');
+          for(var i = inputs.length - 1; i >= qty; i--){
+            namesContainer.removeChild(inputs[i]);
+          }
+        }
+      });
+    }
+
+    // Handle success return from Square
+    if(location.search.includes('booked=1')){
+      var s = document.getElementById('book-success');
+      var f = document.getElementById('booking-form-container');
+      if(s){ s.style.display = 'block'; }
+      if(f){ f.style.display = 'none'; }
       setTimeout(function(){
         s.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 100);
-      history.replaceState(null,'',location.pathname);
+      history.replaceState(null, '', location.pathname);
     }
     
-    // Stripe checkout handler
-    var btn = document.getElementById('stripe-checkout-btn');
-    var errorEl = document.getElementById('stripe-error');
-    var quantitySelect = document.getElementById('guest-quantity');
+    // Square checkout handler
+    var btn = document.getElementById('square-checkout-btn');
+    var errorEl = document.getElementById('checkout-error');
     
     if(btn){
       btn.addEventListener('click', async function(e){
         e.preventDefault();
+        
+        var date = document.getElementById('session-date').value;
+        var name = document.getElementById('booker-name').value;
+        var email = document.getElementById('booker-email').value;
+        var phone = document.getElementById('booker-phone').value;
+        var guestNames = Array.from(document.querySelectorAll('.guest-name-input')).map(i => i.value);
+        
+        if(!date || !name || !email || guestNames.some(n => !n)){
+          errorEl.textContent = 'Please fill in all required fields.';
+          errorEl.style.display = 'block';
+          return;
+        }
+
         btn.disabled = true;
-        btn.textContent = 'Processing...';
+        btn.textContent = 'Redirecting to Square...';
         errorEl.style.display = 'none';
         
         try {
           const quantity = parseInt(quantitySelect.value, 10);
           
-          // Call Netlify Function to create checkout session
-          const response = await fetch('/.netlify/functions/create-checkout', {
+          const response = await fetch('/.netlify/functions/create-square-checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ quantity: quantity })
+            body: JSON.stringify({ 
+              quantity: quantity,
+              sessionDate: date,
+              guestNames: guestNames,
+              bookerName: name,
+              bookerEmail: email,
+              bookerPhone: phone
+            })
           });
           
           if(!response.ok){
-            throw new Error('Failed to create checkout session');
+            const errData = await response.json();
+            throw new Error(errData.error || 'Failed to create checkout session');
           }
           
           const data = await response.json();
           
-          if(data.url){
-            // Redirect to Stripe Checkout
-            window.location.href = data.url;
+          if(data.checkoutUrl){
+            window.location.href = data.checkoutUrl;
           } else {
             throw new Error('No checkout URL returned');
           }
@@ -397,7 +499,7 @@
           errorEl.textContent = 'Error: ' + err.message + '. Please try again or call 0422 879 921.';
           errorEl.style.display = 'block';
           btn.disabled = false;
-          btn.textContent = 'Book & Pay Now with Stripe →';
+          btn.textContent = 'Book & Pay Now with Square →';
         }
       });
     }
