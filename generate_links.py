@@ -28,13 +28,15 @@ def create_link(date_str, guest_count):
                 "redirect_url": "https://succulentdriftwoods.com.au/?booked=1",
                 # Square custom_fields are single-line text boxes.
                 # Max 50 chars per title, max 2 fields.
-                # Comma-separated format used since newlines aren't possible in single-line fields.
                 "custom_fields": [
                     {"title": "All guest names (comma-separated)"},
                     {"title": "Mobile number"}
                 ]
             }
         )
+        # IMPORTANT: use long_url, NOT url.
+        # square.link short URLs go 404 within hours when many links are created.
+        # long_url (checkout.square.site/...) is the stable direct checkout URL.
         return response.payment_link.long_url
     except Exception as e:
         print(f"Error creating link for {date_str} with {guest_count} guests: {e}")
