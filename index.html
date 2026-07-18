@@ -644,6 +644,20 @@
           function onPaymentConfirmed() {
             if (confirmPoller) { clearInterval(confirmPoller); confirmPoller = null; }
             window.removeEventListener('storage', onStorageConfirmed);
+            // If pendingBooking is still in localStorage it means the ?booked=1 flow
+            // in the Square tab hasn't already sent the emails (e.g. cross-tab
+            // communication failed, or the customer manually confirmed).
+            // Send both emails now so Linda always gets notified and the customer
+            // always gets their receipt — regardless of how payment was confirmed.
+            try {
+              var pending = localStorage.getItem('pendingBooking');
+              if (pending) {
+                var bk = JSON.parse(pending);
+                localStorage.removeItem('pendingBooking');
+                sendBookingEmail(bk);
+                sendCustomerReceipt(bk);
+              }
+            } catch(e) {}
             showBookingSuccess();
           }
           function onStorageConfirmed(e) {
