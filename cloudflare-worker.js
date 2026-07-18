@@ -14,19 +14,22 @@
 export default {
   async fetch(request, env) {
 
+    const CORS = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
     // CORS preflight
     if (request.method === 'OPTIONS') {
-      return new Response(null, {
-        headers: {
-          'Access-Control-Allow-Origin': 'https://succulentdriftwoods.com.au',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        }
-      });
+      return new Response(null, { headers: CORS });
     }
 
     if (request.method !== 'POST') {
-      return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+      return new Response(JSON.stringify({ error: 'Method not allowed' }), {
+        status: 405,
+        headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
     }
 
     const TOKEN    = env.SQUARE_ACCESS_TOKEN;
@@ -35,24 +38,60 @@ export default {
     if (!TOKEN) {
       return new Response(JSON.stringify({ error: 'SQUARE_ACCESS_TOKEN secret not set' }), {
         status: 500,
-        headers: { 'Content-Type': 'application/json' }
+        headers: { ...CORS, 'Content-Type': 'application/json' }
       });
     }
 
     let body;
     try { body = await request.json(); }
-    catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), { status: 400 }); }
+    catch { return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
+      status: 400,
+      headers: { ...CORS, 'Content-Type': 'application/json' }
+    }); }
 
     const { guestCount, name, email, phone, dateLabel } = body;
 
     if (!guestCount || !name || !email) {
-      return new Response(JSON.stringify({ error: 'Missing: guestCount, name, email' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Missing: guestCount, name, email' }), {
+        status: 400,
+        headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
     }
 
     const guests    = Math.min(Math.max(parseInt(guestCount) || 1, 1), 10);
     const nameParts = name.trim().split(/\s+/);
     const firstName = nameParts[0] || '';
     const lastName  = nameParts.slice(1).join(' ') || undefined;
+
+    // Format Australian phone numbers to E.164 (+61xxxxxxxxx)
+    // Square requires E.164 format — local AU numbers start with 04 or 03/02/07/08
+    function formatPhone(raw) {
+      if (!raw) return undefined;
+      // Strip everything except digits and leading +
+      const digits = raw.replace(/[^\d]/g, '');
+      if (!digits) return undefined;
+      // Already has country code (10+ digits starting with 61)
+      if (raw.trim().startsWith('+')) {
+        const e164 = '+' + digits;
+        return e164.length >= 8 ? e164 : undefined;
+      }
+      // Australian numbers: 10 digits starting with 0 (e.g. 0400123456)
+      if (digits.startsWith('0') && digits.length === 10) {
+        return '+61' + digits.slice(1);
+      }
+      // Already missing leading 0 (9 digits, AU mobile)
+      if (digits.length === 9 && digits.startsWith('4')) {
+        return '+61' + digits;
+      }
+      // International without + (e.g. 61400123456)
+      if (digits.length === 11 && digits.startsWith('61')) {
+        return '+' + digits;
+      }
+      // Can't determine format — skip to avoid Square API error
+      return undefined;
+    }
+
+    const formattedPhone = formatPhone(phone);
 
     const linkName = `Succulent Driftwood Workshop — ${guests} guest${guests > 1 ? 's' : ''} ($${guests * 100} AUD)${dateLabel ? ' · ' + dateLabel : ''}`;
 
@@ -81,7 +120,7 @@ export default {
           first_name: firstName,
           ...(lastName ? { last_name: lastName } : {})
         },
-        ...(phone ? { buyer_phone_number: phone } : {})
+        ...(formattedPhone ? { buyer_phone_number: formattedPhone } : {})
       }
     };
 
@@ -97,16 +136,16 @@ export default {
 
     const data = await squareRes.json();
 
-    const cors = {
-      'Access-Control-Allow-Origin': 'https://succulentdriftwoods.com.au',
-      'Content-Type': 'application/json'
-    };
-
     if (data.errors) {
       console.error('Square error:', JSON.stringify(data.errors));
-      return new Response(JSON.stringify({ error: data.errors[0]?.detail || 'Square API error' }), { status: 502, headers: cors });
+      return new Response(JSON.stringify({ error: data.errors[0]?.detail || 'Square API error' }), {
+        status: 502,
+        headers: { ...CORS, 'Content-Type': 'application/json' }
+      });
     }
 
-    return new Response(JSON.stringify({ url: data.payment_link.long_url }), { headers: cors });
+    return new Response(JSON.stringify({ url: data.payment_link.long_url }), {
+      headers: { ...CORS, 'Content-Type': 'application/json' }
+    });
   }
 };
