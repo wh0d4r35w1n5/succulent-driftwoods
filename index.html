@@ -556,6 +556,8 @@
     document.getElementById('book-submit').onclick = function () {
       var errEl = document.getElementById('book-err');
       errEl.style.display = 'none';
+      // Clear any stale confirmation from a previous session
+      localStorage.removeItem('bookingConfirmed');
 
       var date  = document.getElementById('bf-date').value;
       var name  = document.getElementById('bf-name').value.trim();
@@ -589,11 +591,10 @@
 
       if (isInApp) {
         // Same-tab navigation: Square opens here, returns to ?booked=1, success shown inline
-        window.location.href = squareUrl + '?buyer_email=' + encodeURIComponent(email);
+        window.location.href = squareUrl;
       } else {
         // Standard browsers: open Square in a new tab, keep this page visible
-        var squareUrlWithEmail = squareUrl + '?buyer_email=' + encodeURIComponent(email);
-        var newTab = window.open(squareUrlWithEmail, '_blank');
+        var newTab = window.open(squareUrl, '_blank');
 
         if (newTab) {
           // New tab opened — show waiting state and listen for payment confirmation
@@ -603,30 +604,36 @@
 
           // Set up fallback link in case new tab was blocked
           var fallbackLink = document.getElementById('square-link-fallback');
-          if (fallbackLink) fallbackLink.href = squareUrlWithEmail;
+          if (fallbackLink) fallbackLink.href = squareUrl;
 
           // Listen for cross-tab confirmation via localStorage storage event
           // AND poll every 1 s as a backup (mobile browsers suspend background tabs
           // and can miss the storage event; iOS Safari sets window.opener=null in
           // new tabs so the return tab signals via localStorage regardless).
           var confirmPoller = null;
+          var bookingStartedAt = Date.now();
           function onPaymentConfirmed() {
             if (confirmPoller) { clearInterval(confirmPoller); confirmPoller = null; }
             window.removeEventListener('storage', onStorageConfirmed);
             showBookingSuccess();
           }
           function onStorageConfirmed(e) {
-            if (e.key === 'bookingConfirmed') { onPaymentConfirmed(); }
+            if (e.key === 'bookingConfirmed') {
+              // Only accept confirmations set AFTER this booking started
+              var ts = parseInt(e.newValue || localStorage.getItem('bookingConfirmed') || '0');
+              if (ts > bookingStartedAt) { onPaymentConfirmed(); }
+            }
           }
           window.addEventListener('storage', onStorageConfirmed);
           confirmPoller = setInterval(function() {
-            if (localStorage.getItem('bookingConfirmed')) { onPaymentConfirmed(); }
+            var val = localStorage.getItem('bookingConfirmed');
+            if (val && parseInt(val) > bookingStartedAt) { onPaymentConfirmed(); }
           }, 1000);
           // Expose manual confirm for the "I've completed my payment" button
           window.__manualPaymentConfirm = onPaymentConfirmed;
         } else {
           // Popup blocked — fall back to same-tab navigation
-          window.location.href = squareUrlWithEmail;
+          window.location.href = squareUrl;
         }
       }
     };
@@ -681,19 +688,9 @@
         showBookingSuccess();
       }
     } else {
-      // Normal page load — but first check if a payment was just confirmed
-      // (handles the case where the original tab was closed/refreshed on mobile)
-      if (localStorage.getItem('bookingConfirmed')) {
-        localStorage.removeItem('bookingConfirmed');
-        var booking2 = null;
-        try { booking2 = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
-        if (booking2) { localStorage.removeItem('pendingBooking'); sendBookingEmail(booking2); sendCustomerReceipt(booking2); }
-        showBookingSuccess();
-      } else {
-        // Show the booking form as normal
-        var formEl = document.getElementById('booking-form-container');
-        if (formEl) formEl.style.display = 'block';
-      }
+      // Normal page load — show the booking form
+      var formEl = document.getElementById('booking-form-container');
+      if (formEl) formEl.style.display = 'block';
     }
   })();
   </script>
