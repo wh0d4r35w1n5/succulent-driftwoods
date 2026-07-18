@@ -26,8 +26,10 @@ def create_link(date_str, guest_count):
             },
             checkout_options={
                 "redirect_url": "https://succulentdriftwoods.com.au/?booked=1",
+                # Square max 50 chars per title, max 2 custom fields
                 "custom_fields": [
-                    {"title": "Guest names (one per line)"}
+                    {"title": "Guest names (one per line)"},
+                    {"title": "Mobile number"}
                 ]
             }
         )

@@ -355,8 +355,8 @@
             </div>
 
             <div class="form-group" style="margin-bottom:1.5rem">
-              <label for="bf-phone" style="display:block;margin-bottom:0.5rem;font-weight:600">Phone <span style="font-weight:400;opacity:.7">(optional)</span></label>
-              <input type="tel" id="bf-phone" placeholder="+61 400 000 000" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem;box-sizing:border-box">
+              <label for="bf-phone" style="display:block;margin-bottom:0.5rem;font-weight:600">Mobile number *</label>
+              <input type="tel" id="bf-phone" placeholder="+61 400 000 000" required style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem;box-sizing:border-box">
             </div>
 
             <button type="button" id="book-submit" class="btn btn-primary btn-full">Book &amp; Pay with Square →</button>
@@ -465,11 +465,13 @@
       var name  = document.getElementById('bf-name').value.trim();
       var email = document.getElementById('bf-email').value.trim();
       var names = Array.from(document.querySelectorAll('.bf-guest-name')).map(function(f){ return f.value.trim(); });
+      var phone = document.getElementById('bf-phone').value.trim();
 
       if (!date)                                    { errEl.textContent = 'Please select a date.';               errEl.style.display = 'block'; return; }
       if (names.some(function(n){ return !n; }))   { errEl.textContent = 'Please enter all guest names.';       errEl.style.display = 'block'; return; }
       if (!name)                                    { errEl.textContent = 'Please enter your name.';             errEl.style.display = 'block'; return; }
       if (!email || !/\S+@\S+\.\S+/.test(email))  { errEl.textContent = 'Please enter a valid email address.'; errEl.style.display = 'block'; return; }
+      if (!phone)                                   { errEl.textContent = 'Please enter your mobile number.';    errEl.style.display = 'block'; return; }
 
       if (!paymentLinks || !paymentLinks[date] || !paymentLinks[date][guestCount]) {
         errEl.textContent = 'Payment links are still loading. Please try again in a moment.';
@@ -488,7 +490,6 @@
 
       // Save booking details to sessionStorage — email fires only after confirmed payment
       var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
-      var phone = (document.getElementById('bf-phone').value || '').trim();
       localStorage.setItem('pendingBooking', JSON.stringify({
         dateLabel: dateLabel,
         guestCount: guestCount,
@@ -534,7 +535,7 @@
               '',
               'BOOKER NAME: ' + booking.name,
               'BOOKER EMAIL: ' + booking.email,
-              'BOOKER PHONE: ' + (booking.phone || 'not provided')
+              'BOOKER MOBILE: ' + (booking.phone || 'not provided')
             ].join('\n')
           })
         }).catch(function(){});
