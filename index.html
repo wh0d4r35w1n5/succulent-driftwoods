@@ -492,135 +492,12 @@
           access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
           subject: '✅ New Booking PAID — ' + booking.dateLabel,
           from_name: 'Succulent Driftwoods Bookings',
-          to: 'lindaolsen4healing@outlook.com',
+          to: 'linda@succulentdriftwoods.com.au',
           message: [
             'NEW BOOKING — payment received via Square.',
             '─────────────────────────────────────',
             'DATE: ' + booking.dateLabel,
-            'GUESTS: ' + booking.guestCount + ' x $100 = 
-
-    // Submit handler
-    document.getElementById('book-submit').onclick = function () {
-      var errEl = document.getElementById('book-err');
-      errEl.style.display = 'none';
-
-      var date  = document.getElementById('bf-date').value;
-      var name  = document.getElementById('bf-name').value.trim();
-      var email = document.getElementById('bf-email').value.trim();
-      var names = Array.from(document.querySelectorAll('.bf-guest-name')).map(function(f){ return f.value.trim(); });
-      var phone = document.getElementById('bf-phone').value.trim();
-
-      if (!date)                                    { errEl.textContent = 'Please select a date.';               errEl.style.display = 'block'; return; }
-      if (names.some(function(n){ return !n; }))   { errEl.textContent = 'Please enter all guest names.';       errEl.style.display = 'block'; return; }
-      if (!name)                                    { errEl.textContent = 'Please enter your name.';             errEl.style.display = 'block'; return; }
-      if (!email || !/\S+@\S+\.\S+/.test(email))  { errEl.textContent = 'Please enter a valid email address.'; errEl.style.display = 'block'; return; }
-      if (!phone)                                   { errEl.textContent = 'Please enter your mobile number.';    errEl.style.display = 'block'; return; }
-
-      if (!paymentLinks || !paymentLinks[String(guestCount)]) {
-        errEl.textContent = 'Payment links are still loading. Please try again in a moment.';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      var squareUrl = paymentLinks[String(guestCount)];
-      pendingSquareUrl = squareUrl;
-
-      // Save booking details — email fires only after confirmed payment
-      var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
-      var bookingData = { dateLabel: dateLabel, guestCount: guestCount, names: names, name: name, email: email, phone: phone };
-      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-
-      // In-app browsers (Facebook, Instagram, TikTok, etc.) don't support
-      // cross-tab localStorage events, so skip the new-tab flow entirely for them.
-      var isInApp = /FBAN|FBAV|Instagram|musical_ly|TikTok|Twitter\/|LinkedInApp|Snapchat|Pinterest\/|Line\/|MicroMessenger|QQ\//i.test(navigator.userAgent);
-
-      if (isInApp) {
-        // Same-tab navigation: Square opens here, returns to ?booked=1, success shown inline
-        window.location.href = squareUrl;
-      } else {
-        // Standard browsers: open Square in a new tab, keep this page visible
-        var newTab = window.open(squareUrl, '_blank');
-
-        if (newTab) {
-          // New tab opened — show waiting state and listen for payment confirmation
-          document.getElementById('booking-form-container').style.display = 'none';
-          var waitEl = document.getElementById('book-waiting');
-          if (waitEl) waitEl.style.display = 'block';
-
-          // Set up fallback link in case new tab was blocked
-          var fallbackLink = document.getElementById('square-link-fallback');
-          if (fallbackLink) fallbackLink.href = squareUrl;
-
-          // Listen for cross-tab confirmation via localStorage storage event
-          window.addEventListener('storage', function onConfirmed(e) {
-            if (e.key === 'bookingConfirmed') {
-              window.removeEventListener('storage', onConfirmed);
-              showBookingSuccess();
-            }
-          });
-        } else {
-          // Popup blocked — fall back to same-tab navigation
-          window.location.href = squareUrl;
-        }
-      }
-    };
-
-    // ── Handle return from Square (?booked=1) ──
-    // This runs when Square redirects back to this page after payment.
-    // It may be in a new tab (opened by us) or the same tab (popup-blocked fallback).
-    if (window.location.search.indexOf('booked=1') !== -1) {
-      // Clean up the URL immediately
-      history.replaceState(null, '', location.pathname);
-
-      // Retrieve and clear pending booking
-      var booking = null;
-      try { booking = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
-      localStorage.removeItem('pendingBooking');
-
-      // Send notification email to Linda
-      if (booking) { sendBookingEmail(booking); sendCustomerReceipt(booking); }
-
-      if (window.opener && !window.opener.closed) {
-        // ── New-tab flow: signal the original tab, then close this one ──
-        // Set a flag the original tab's storage event listener will catch
-        localStorage.setItem('bookingConfirmed', Date.now().toString());
-        setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 8000);
-
-        // Show a minimal "you can close this tab" message in the new tab
-        document.body.innerHTML = [
-          '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;',
-          'background:#f5faf5;font-family:system-ui,sans-serif;padding:2rem;box-sizing:border-box">',
-          '<div style="text-align:center;max-width:420px">',
-          '<div style="font-size:56px;margin-bottom:1rem">✓</div>',
-          '<h1 style="color:#1a5c20;font-size:1.6rem;margin:0 0 0.75rem">Payment received!</h1>',
-          '<p style="color:#3a7040;font-size:1rem;line-height:1.6;margin:0 0 1.5rem">',
-          'Your spot is confirmed. A booking confirmation has been sent to your email.<br>',
-          'You can close this tab and return to the website.',
-          '</p>',
-          '<button onclick="window.close()" style="background:#2d5a27;color:#fff;border:none;',
-          'padding:0.75rem 2rem;border-radius:6px;font-size:1rem;cursor:pointer">',
-          'Close this tab</button>',
-          '</div></div>'
-        ].join('');
-        // Try to auto-close after a moment
-        setTimeout(function(){ try { window.close(); } catch(e){} }, 4000);
-      } else {
-        // ── Same-tab fallback (popup was blocked): show success inline ──
-        var formEl = document.getElementById('booking-form-container');
-        if (formEl) formEl.style.display = 'none';
-        showBookingSuccess();
-      }
-    } else {
-      // Normal page load — show the booking form
-      var formEl = document.getElementById('booking-form-container');
-      if (formEl) formEl.style.display = 'block';
-    }
-  })();
-  </script>
-
-</body>
-</html>
- + (booking.guestCount * 100),
+            'GUESTS: ' + booking.guestCount + ' x $100 = $' + (booking.guestCount * 100),
             'GUEST NAMES:',
             booking.names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
             '',
@@ -630,10 +507,10 @@
           ].join('\n')
         })
       }).catch(function(){});
-    }
 
     // Send booking confirmation email to the customer via web3forms
     function sendCustomerReceipt(booking) {
+      var d = String.fromCharCode(36); // $ — avoids bash expansion in deploy scripts
       fetch('https://api.web3forms.com/submit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -654,130 +531,8 @@
             'Time:      10:00 AM – 12:00 PM',
             'Location:  19 Yengara Way, Ocean Shores NSW 2483',
             'Guests:    ' + booking.guestCount + ' (' + booking.names.join(', ') + ')',
-            'Total:     
-
-    // Submit handler
-    document.getElementById('book-submit').onclick = function () {
-      var errEl = document.getElementById('book-err');
-      errEl.style.display = 'none';
-
-      var date  = document.getElementById('bf-date').value;
-      var name  = document.getElementById('bf-name').value.trim();
-      var email = document.getElementById('bf-email').value.trim();
-      var names = Array.from(document.querySelectorAll('.bf-guest-name')).map(function(f){ return f.value.trim(); });
-      var phone = document.getElementById('bf-phone').value.trim();
-
-      if (!date)                                    { errEl.textContent = 'Please select a date.';               errEl.style.display = 'block'; return; }
-      if (names.some(function(n){ return !n; }))   { errEl.textContent = 'Please enter all guest names.';       errEl.style.display = 'block'; return; }
-      if (!name)                                    { errEl.textContent = 'Please enter your name.';             errEl.style.display = 'block'; return; }
-      if (!email || !/\S+@\S+\.\S+/.test(email))  { errEl.textContent = 'Please enter a valid email address.'; errEl.style.display = 'block'; return; }
-      if (!phone)                                   { errEl.textContent = 'Please enter your mobile number.';    errEl.style.display = 'block'; return; }
-
-      if (!paymentLinks || !paymentLinks[String(guestCount)]) {
-        errEl.textContent = 'Payment links are still loading. Please try again in a moment.';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      var squareUrl = paymentLinks[String(guestCount)];
-      pendingSquareUrl = squareUrl;
-
-      // Save booking details — email fires only after confirmed payment
-      var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
-      var bookingData = { dateLabel: dateLabel, guestCount: guestCount, names: names, name: name, email: email, phone: phone };
-      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
-
-      // In-app browsers (Facebook, Instagram, TikTok, etc.) don't support
-      // cross-tab localStorage events, so skip the new-tab flow entirely for them.
-      var isInApp = /FBAN|FBAV|Instagram|musical_ly|TikTok|Twitter\/|LinkedInApp|Snapchat|Pinterest\/|Line\/|MicroMessenger|QQ\//i.test(navigator.userAgent);
-
-      if (isInApp) {
-        // Same-tab navigation: Square opens here, returns to ?booked=1, success shown inline
-        window.location.href = squareUrl;
-      } else {
-        // Standard browsers: open Square in a new tab, keep this page visible
-        var newTab = window.open(squareUrl, '_blank');
-
-        if (newTab) {
-          // New tab opened — show waiting state and listen for payment confirmation
-          document.getElementById('booking-form-container').style.display = 'none';
-          var waitEl = document.getElementById('book-waiting');
-          if (waitEl) waitEl.style.display = 'block';
-
-          // Set up fallback link in case new tab was blocked
-          var fallbackLink = document.getElementById('square-link-fallback');
-          if (fallbackLink) fallbackLink.href = squareUrl;
-
-          // Listen for cross-tab confirmation via localStorage storage event
-          window.addEventListener('storage', function onConfirmed(e) {
-            if (e.key === 'bookingConfirmed') {
-              window.removeEventListener('storage', onConfirmed);
-              showBookingSuccess();
-            }
-          });
-        } else {
-          // Popup blocked — fall back to same-tab navigation
-          window.location.href = squareUrl;
-        }
-      }
-    };
-
-    // ── Handle return from Square (?booked=1) ──
-    // This runs when Square redirects back to this page after payment.
-    // It may be in a new tab (opened by us) or the same tab (popup-blocked fallback).
-    if (window.location.search.indexOf('booked=1') !== -1) {
-      // Clean up the URL immediately
-      history.replaceState(null, '', location.pathname);
-
-      // Retrieve and clear pending booking
-      var booking = null;
-      try { booking = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
-      localStorage.removeItem('pendingBooking');
-
-      // Send notification email to Linda
-      if (booking) { sendBookingEmail(booking); sendCustomerReceipt(booking); }
-
-      if (window.opener && !window.opener.closed) {
-        // ── New-tab flow: signal the original tab, then close this one ──
-        // Set a flag the original tab's storage event listener will catch
-        localStorage.setItem('bookingConfirmed', Date.now().toString());
-        setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 8000);
-
-        // Show a minimal "you can close this tab" message in the new tab
-        document.body.innerHTML = [
-          '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;',
-          'background:#f5faf5;font-family:system-ui,sans-serif;padding:2rem;box-sizing:border-box">',
-          '<div style="text-align:center;max-width:420px">',
-          '<div style="font-size:56px;margin-bottom:1rem">✓</div>',
-          '<h1 style="color:#1a5c20;font-size:1.6rem;margin:0 0 0.75rem">Payment received!</h1>',
-          '<p style="color:#3a7040;font-size:1rem;line-height:1.6;margin:0 0 1.5rem">',
-          'Your spot is confirmed. A booking confirmation has been sent to your email.<br>',
-          'You can close this tab and return to the website.',
-          '</p>',
-          '<button onclick="window.close()" style="background:#2d5a27;color:#fff;border:none;',
-          'padding:0.75rem 2rem;border-radius:6px;font-size:1rem;cursor:pointer">',
-          'Close this tab</button>',
-          '</div></div>'
-        ].join('');
-        // Try to auto-close after a moment
-        setTimeout(function(){ try { window.close(); } catch(e){} }, 4000);
-      } else {
-        // ── Same-tab fallback (popup was blocked): show success inline ──
-        var formEl = document.getElementById('booking-form-container');
-        if (formEl) formEl.style.display = 'none';
-        showBookingSuccess();
-      }
-    } else {
-      // Normal page load — show the booking form
-      var formEl = document.getElementById('booking-form-container');
-      if (formEl) formEl.style.display = 'block';
-    }
-  })();
-  </script>
-
-</body>
-</html>
- + (booking.guestCount * 100) + ' AUD — paid via Square',
+            'Price:     ' + d + '100 AUD per person',
+            'Total:     ' + d + (booking.guestCount * 100) + ' AUD — paid via Square',
             '─────────────────────────────────────',
             '',
             'Everything is included — all materials and morning tea.',
@@ -793,7 +548,6 @@
         })
       }).catch(function(){});
     }
-
     // Submit handler
     document.getElementById('book-submit').onclick = function () {
       var errEl = document.getElementById('book-err');
