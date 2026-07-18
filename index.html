@@ -327,6 +327,8 @@
             ⏳ Square payment page opened in a new tab — complete your payment there, then come back here. This page will update automatically once your payment goes through.
             <br><br>
             <small style="font-weight:400;color:#2a5c8c">If the Square tab didn't open, <a href="#" id="square-link-fallback" style="color:#1a5cac">click here to pay</a>.</small>
+            <br><br>
+            <button id="paid-manual-btn" onclick="window.__manualPaymentConfirm && window.__manualPaymentConfirm()" style="background:#2d5a27;color:#fff;border:none;padding:0.6rem 1.4rem;border-radius:6px;font-size:0.9rem;cursor:pointer;font-family:inherit;margin-top:4px">✓ I've completed my payment</button>
           </div>
           <div id="booking-form-container" style="display:none">
             <div class="form-group" style="margin-bottom:1.5rem">
@@ -604,12 +606,24 @@
           if (fallbackLink) fallbackLink.href = squareUrlWithEmail;
 
           // Listen for cross-tab confirmation via localStorage storage event
-          window.addEventListener('storage', function onConfirmed(e) {
-            if (e.key === 'bookingConfirmed') {
-              window.removeEventListener('storage', onConfirmed);
-              showBookingSuccess();
-            }
-          });
+          // AND poll every 1 s as a backup (mobile browsers suspend background tabs
+          // and can miss the storage event; iOS Safari sets window.opener=null in
+          // new tabs so the return tab signals via localStorage regardless).
+          var confirmPoller = null;
+          function onPaymentConfirmed() {
+            if (confirmPoller) { clearInterval(confirmPoller); confirmPoller = null; }
+            window.removeEventListener('storage', onStorageConfirmed);
+            showBookingSuccess();
+          }
+          function onStorageConfirmed(e) {
+            if (e.key === 'bookingConfirmed') { onPaymentConfirmed(); }
+          }
+          window.addEventListener('storage', onStorageConfirmed);
+          confirmPoller = setInterval(function() {
+            if (localStorage.getItem('bookingConfirmed')) { onPaymentConfirmed(); }
+          }, 1000);
+          // Expose manual confirm for the "I've completed my payment" button
+          window.__manualPaymentConfirm = onPaymentConfirmed;
         } else {
           // Popup blocked — fall back to same-tab navigation
           window.location.href = squareUrlWithEmail;
@@ -632,12 +646,14 @@
       // Send notification email to Linda
       if (booking) { sendBookingEmail(booking); sendCustomerReceipt(booking); }
 
-      if (window.opener && !window.opener.closed) {
-        // ── New-tab flow: signal the original tab, then close this one ──
-        // Set a flag the original tab's storage event listener will catch
-        localStorage.setItem('bookingConfirmed', Date.now().toString());
-        setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 8000);
+      // ── Always signal the original tab via localStorage, regardless of window.opener.
+      //    iOS Safari 14+ sets window.opener=null in new tabs (security policy), so we
+      //    can't rely on it. The original tab's poller checks localStorage every 1 s. ──
+      localStorage.setItem('bookingConfirmed', Date.now().toString());
+      setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 10000);
 
+      if (window.opener && !window.opener.closed) {
+        // ── New-tab flow (desktop / Android): signal done, then close this tab ──
         // Show a minimal "you can close this tab" message in the new tab
         document.body.innerHTML = [
           '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;',
@@ -657,15 +673,27 @@
         // Try to auto-close after a moment
         setTimeout(function(){ try { window.close(); } catch(e){} }, 4000);
       } else {
-        // ── Same-tab fallback (popup was blocked): show success inline ──
+        // ── Same-tab or iOS Safari (window.opener=null): show success inline here ──
+        // localStorage.bookingConfirmed is already set above so if the original tab
+        // is still open its poller will also show success within ~1 s.
         var formEl = document.getElementById('booking-form-container');
         if (formEl) formEl.style.display = 'none';
         showBookingSuccess();
       }
     } else {
-      // Normal page load — show the booking form
-      var formEl = document.getElementById('booking-form-container');
-      if (formEl) formEl.style.display = 'block';
+      // Normal page load — but first check if a payment was just confirmed
+      // (handles the case where the original tab was closed/refreshed on mobile)
+      if (localStorage.getItem('bookingConfirmed')) {
+        localStorage.removeItem('bookingConfirmed');
+        var booking2 = null;
+        try { booking2 = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
+        if (booking2) { localStorage.removeItem('pendingBooking'); sendBookingEmail(booking2); sendCustomerReceipt(booking2); }
+        showBookingSuccess();
+      } else {
+        // Show the booking form as normal
+        var formEl = document.getElementById('booking-form-container');
+        if (formEl) formEl.style.display = 'block';
+      }
     }
   })();
   </script>
