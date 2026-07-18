@@ -186,7 +186,7 @@
         .catch(err => console.error('Error loading payment links:', err));
 
       var sessions = (function(){
-        var out=[], start=new Date('2026-07-25T00:00:00Z');
+        var out=[], today=new Date(), dow=today.getUTCDay(), daysUntilSat=dow===6?7:(6-dow+7)%7||7, start=new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate()+daysUntilSat));
         for(var i=0;i<12;i++){
           var d=new Date(start); d.setUTCDate(start.getUTCDate()+i*7);
           var iso=d.toISOString().split('T')[0];
