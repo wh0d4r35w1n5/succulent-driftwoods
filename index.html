@@ -527,24 +527,7 @@
               'PAYMENT CONFIRMED via Square.',
               '─────────────────────────────────────',
               'DATE: ' + booking.dateLabel,
-              'GUESTS: ' + booking.guestCount + ' x $100 = 
-              'GUEST NAMES:',
-              booking.names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
-              '',
-              'BOOKER NAME: ' + booking.name,
-              'BOOKER EMAIL: ' + booking.email,
-              'BOOKER PHONE: ' + (booking.phone || 'not provided')
-            ].join('\n')
-          })
-        }).catch(function(){});
-      }
-    }
-  })();
-  </script>
-
-</body>
-</html>
- + (booking.guestCount * 100),
+              'GUESTS: ' + booking.guestCount + ' x $100 = $' + (booking.guestCount * 100),
               'GUEST NAMES:',
               booking.names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
               '',
