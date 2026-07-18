@@ -538,7 +538,7 @@
           access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
           subject: '✓ You\'re booked! Succulent Driftwood Workshop — ' + booking.dateLabel,
           from_name: 'Succulent Driftwoods',
-          to: booking.email,
+          cc: booking.email,
           message: [
             'Hi ' + booking.name + ',',
             '',
@@ -557,7 +557,6 @@
             '',
             'Everything is included — all materials and morning tea.',
             '',
-            'Linda will be in touch shortly to confirm your Saturday.',
             'Any questions? Call or text Linda on 0422 879 921.',
             '',
             'See you soon!',
