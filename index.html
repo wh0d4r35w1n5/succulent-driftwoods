@@ -486,6 +486,45 @@
         gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
       }
 
+      // Send booking notification email to Linda via Web3Forms (fire-and-forget)
+      var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
+      var phone = (document.getElementById('bf-phone').value || '').trim();
+      fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
+          subject: 'New Workshop Booking — ' + dateLabel,
+          from_name: 'Succulent Driftwoods Bookings',
+          message: [
+            'DATE: ' + dateLabel,
+            'GUESTS: ' + guestCount + ' × $100 = 
+    };
+
+    // Thank-you banner on return from Square
+    if (window.location.search.indexOf('booked=1') !== -1) {
+      var s = document.getElementById('book-success');
+      var f = document.getElementById('booking-form-container');
+      if (s) s.style.display = 'block';
+      if (f) f.style.display = 'none';
+      setTimeout(function(){ if (s) s.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+      history.replaceState(null, '', location.pathname);
+    }
+  })();
+  </script>
+
+</body>
+</html>
+ + (guestCount * 100),
+            'GUEST NAMES:\n' + names.map(function(n, i){ return '  ' + (i+1) + '. ' + n; }).join('\n'),
+            '',
+            'BOOKER NAME: ' + name,
+            'BOOKER EMAIL: ' + email,
+            'BOOKER PHONE: ' + (phone || 'not provided'),
+          ].join('\n')
+        })
+      }).catch(function(){});  // never block the redirect
+
       window.location.href = paymentLinks[date][guestCount];
     };
 
