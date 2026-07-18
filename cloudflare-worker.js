@@ -103,15 +103,20 @@ export default {
     // Item name shown in Linda's Square dashboard against every payment
     const linkName = `Succulent Driftwood Workshop — ${guestListStr} (${guests * 100} AUD)${dateLabel ? ' · ' + dateLabel : ''}`;
 
+    // One line item per guest — each appears individually in Square's Order Summary,
+    // on the customer's receipt, and in Linda's Square dashboard.
+    const lineItems = guestNames.map(guestName => ({
+      name: `${guestName} — Succulent Driftwood Workshop${dateLabel ? ' · ' + dateLabel : ''}`,
+      quantity: '1',
+      base_price_money: { amount: 10000, currency: 'AUD' }
+    }));
+
     const payload = {
       idempotency_key: `booking-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
-      quick_pay: {
-        name: linkName,
-        price_money: { amount: guests * 10000, currency: 'AUD' },
-        location_id: LOCATION
+      order: {
+        location_id: LOCATION,
+        line_items: lineItems
       },
-      // Shows on Square checkout page and on the customer's payment receipt
-      payment_note: `Guests: ${guestListStr}`,
       checkout_options: {
         redirect_url: 'https://succulentdriftwoods.com.au/?booked=1',
         ask_for_shipping_address: false,
