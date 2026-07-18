@@ -320,7 +320,14 @@
           </div>
         </div>
         <div class="book-form reveal reveal-delay">
-          <div id="book-success" style="display:none;background:#d4edda;border:1px solid #a3d3a4;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a5c20;font-size:15px;font-weight:500">✓ Checkout complete — Please pay via Square then check your email for a payment receipt from Square.</div>
+          <!-- Success message — shown after payment confirmed -->
+          <div id="book-success" style="display:none;background:#d4edda;border:1px solid #a3d3a4;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a5c20;font-size:15px;font-weight:500">✓ Payment received — your spot is confirmed! Check your email for a receipt from Square.</div>
+          <!-- Waiting state — shown after Square tab opens, before payment completes -->
+          <div id="book-waiting" style="display:none;background:#e8f4fd;border:1px solid #90c4e8;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a3c5c;font-size:15px;font-weight:500">
+            ⏳ Square payment page opened in a new tab — complete your payment there, then come back here. This page will update automatically once your payment goes through.
+            <br><br>
+            <small style="font-weight:400;color:#2a5c8c">If the Square tab didn't open, <a href="#" id="square-link-fallback" style="color:#1a5cac">click here to pay</a>.</small>
+          </div>
           <div id="booking-form-container" style="display:none">
             <div class="form-group" style="margin-bottom:1.5rem">
               <label for="bf-date" style="display:block;margin-bottom:0.5rem;font-weight:600">Select a date *</label>
@@ -359,7 +366,6 @@
               <input type="tel" id="bf-phone" placeholder="+61 400 000 000" required style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem;box-sizing:border-box">
             </div>
 
-            <p style="margin-bottom:1rem;padding:0.75rem 1rem;background:#fff8e7;border-left:3px solid #e6a817;border-radius:4px;font-size:0.88rem;color:#5a4200;line-height:1.5"><strong>📋 On the Square payment page</strong> you’ll be asked to enter guest names again (all in one box, separated by commas — e.g. <em>Jane Smith, Bob Jones</em>) and your mobile number. This keeps a backup record directly in Square.</p>
               <button type="button" id="book-submit" class="btn btn-primary btn-full">Book &amp; Pay with Square →</button>
             <p style="margin-top:1rem;font-size:0.9rem;opacity:0.8">Secure payment via Square · $100 per person · all major cards accepted</p>
             <p id="book-err" style="display:none;color:#c00;margin-top:1rem;font-weight:500"></p>
@@ -404,10 +410,11 @@
   <!-- app.js: gallery, lightbox, nav, hero slideshow, scroll reveal -->
   <script src="js/app.js"></script>
 
-  <!-- Payment form: pre-generated Square links -->
+  <!-- Payment form: Square payment links (by guest count) -->
   <script>
   (function () {
     var paymentLinks = null;
+    var pendingSquareUrl = null;
 
     fetch('payment_links.json')
       .then(function(r){ return r.json(); })
@@ -457,7 +464,52 @@
     document.getElementById('bf-minus').onclick = function () { if (guestCount > 1) { guestCount--; updateGuests(); } };
     document.getElementById('bf-plus').onclick = function () { if (guestCount < 10) { guestCount++; updateGuests(); } };
 
-    // Submit
+    // Show booking success state
+    function showBookingSuccess() {
+      var s = document.getElementById('book-success');
+      var w = document.getElementById('book-waiting');
+      var f = document.getElementById('booking-form-container');
+      if (w) w.style.display = 'none';
+      if (f) f.style.display = 'none';
+      if (s) {
+        s.style.display = 'block';
+        setTimeout(function(){ s.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+      }
+      // Fire Google Ads conversion on confirmed payment
+      if (typeof gtag === 'function') {
+        gtag('event', 'conversion', { 'send_to': 'AW-18312602483/WyLICL_XnNAcEPPGkJxE' });
+        gtag('event', 'conversion', { 'send_to': 'AW-18308323492/1400COLQ3MwcEKSxi5pE' });
+        gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
+      }
+    }
+
+    // Send booking notification email to Linda via web3forms
+    function sendBookingEmail(booking) {
+      fetch('https://api.web3forms.com/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({
+          access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
+          subject: '✅ New Booking PAID — ' + booking.dateLabel,
+          from_name: 'Succulent Driftwoods Bookings',
+          to: 'linda@succulentdriftwoods.com.au',
+          message: [
+            'NEW BOOKING — payment received via Square.',
+            '─────────────────────────────────────',
+            'DATE: ' + booking.dateLabel,
+            'GUESTS: ' + booking.guestCount + ' x $100 = $' + (booking.guestCount * 100),
+            'GUEST NAMES:',
+            booking.names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
+            '',
+            'BOOKER NAME: ' + booking.name,
+            'BOOKER EMAIL: ' + booking.email,
+            'BOOKER MOBILE: ' + (booking.phone || 'not provided')
+          ].join('\n')
+        })
+      }).catch(function(){});
+    }
+
+    // Submit handler
     document.getElementById('book-submit').onclick = function () {
       var errEl = document.getElementById('book-err');
       errEl.style.display = 'none';
@@ -474,76 +526,93 @@
       if (!email || !/\S+@\S+\.\S+/.test(email))  { errEl.textContent = 'Please enter a valid email address.'; errEl.style.display = 'block'; return; }
       if (!phone)                                   { errEl.textContent = 'Please enter your mobile number.';    errEl.style.display = 'block'; return; }
 
-      if (!paymentLinks || !paymentLinks[date] || !paymentLinks[date][guestCount]) {
+      if (!paymentLinks || !paymentLinks[String(guestCount)]) {
         errEl.textContent = 'Payment links are still loading. Please try again in a moment.';
         errEl.style.display = 'block';
         return;
       }
 
-      var btn = document.getElementById('book-submit');
-      btn.textContent = 'Redirecting to Square…';
-      btn.disabled = true;
+      var squareUrl = paymentLinks[String(guestCount)];
+      pendingSquareUrl = squareUrl;
 
-      if (typeof gtag === 'function') {
-        gtag('event', 'conversion', { 'send_to': 'AW-18312602483/WyLICL_XnNAcEPPGkJxE' });
-        gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
-      }
-
-      // Save booking details to sessionStorage — email fires only after confirmed payment
+      // Save booking details — email fires only after confirmed payment
       var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
-      localStorage.setItem('pendingBooking', JSON.stringify({
-        dateLabel: dateLabel,
-        guestCount: guestCount,
-        names: names,
-        name: name,
-        email: email,
-        phone: phone
-      }));
+      var bookingData = { dateLabel: dateLabel, guestCount: guestCount, names: names, name: name, email: email, phone: phone };
+      localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
 
-      window.location.href = paymentLinks[date][guestCount];
+      // Try to open Square in a new tab (keeps this page visible)
+      var newTab = window.open(squareUrl, '_blank');
+
+      if (newTab) {
+        // New tab opened — show waiting state and listen for payment confirmation
+        document.getElementById('booking-form-container').style.display = 'none';
+        var waitEl = document.getElementById('book-waiting');
+        if (waitEl) waitEl.style.display = 'block';
+
+        // Set up fallback link in case new tab was blocked
+        var fallbackLink = document.getElementById('square-link-fallback');
+        if (fallbackLink) fallbackLink.href = squareUrl;
+
+        // Listen for cross-tab confirmation via localStorage storage event
+        window.addEventListener('storage', function onConfirmed(e) {
+          if (e.key === 'bookingConfirmed') {
+            window.removeEventListener('storage', onConfirmed);
+            showBookingSuccess();
+          }
+        });
+      } else {
+        // Popup blocked — fall back to same-tab navigation
+        window.location.href = squareUrl;
+      }
     };
 
-    // Show the booking form (hidden by default to prevent flash on ?booked=1 pages)
-    // On return from Square (?booked=1) — checkout complete, send email to Linda
+    // ── Handle return from Square (?booked=1) ──
+    // This runs when Square redirects back to this page after payment.
+    // It may be in a new tab (opened by us) or the same tab (popup-blocked fallback).
     if (window.location.search.indexOf('booked=1') !== -1) {
-      var s = document.getElementById('book-success');
-      var f = document.getElementById('booking-form-container');
-      if (s) s.style.display = 'block';
-      if (f) f.style.display = 'none';
-      setTimeout(function(){ if (s) s.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
+      // Clean up the URL immediately
       history.replaceState(null, '', location.pathname);
 
+      // Retrieve and clear pending booking
       var booking = null;
       try { booking = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
       localStorage.removeItem('pendingBooking');
 
-      if (booking) {
-        fetch('https://api.web3forms.com/submit', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
-            subject: 'New Booking SUBMITTED — ' + booking.dateLabel + ' (verify payment in Square)',
-            from_name: 'Succulent Driftwoods Bookings',
-            to: 'linda@succulentdriftwoods.com.au',
-            
-            message: [
-              'BOOKING SUBMITTED — please check Square Dashboard to confirm payment was received.',
-              '─────────────────────────────────────',
-              'DATE: ' + booking.dateLabel,
-              'GUESTS: ' + booking.guestCount + ' x $100 = $' + (booking.guestCount * 100),
-              'GUEST NAMES:',
-              booking.names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
-              '',
-              'BOOKER NAME: ' + booking.name,
-              'BOOKER EMAIL: ' + booking.email,
-              'BOOKER MOBILE: ' + (booking.phone || 'not provided')
-            ].join('\n')
-          })
-        }).catch(function(){});
+      // Send notification email to Linda
+      if (booking) sendBookingEmail(booking);
+
+      if (window.opener && !window.opener.closed) {
+        // ── New-tab flow: signal the original tab, then close this one ──
+        // Set a flag the original tab's storage event listener will catch
+        localStorage.setItem('bookingConfirmed', Date.now().toString());
+        setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 8000);
+
+        // Show a minimal "you can close this tab" message in the new tab
+        document.body.innerHTML = [
+          '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;',
+          'background:#f5faf5;font-family:system-ui,sans-serif;padding:2rem;box-sizing:border-box">',
+          '<div style="text-align:center;max-width:420px">',
+          '<div style="font-size:56px;margin-bottom:1rem">✓</div>',
+          '<h1 style="color:#1a5c20;font-size:1.6rem;margin:0 0 0.75rem">Payment received!</h1>',
+          '<p style="color:#3a7040;font-size:1rem;line-height:1.6;margin:0 0 1.5rem">',
+          'Your spot is confirmed. Check your email for a receipt from Square.<br>',
+          'You can close this tab and return to the website.',
+          '</p>',
+          '<button onclick="window.close()" style="background:#2d5a27;color:#fff;border:none;',
+          'padding:0.75rem 2rem;border-radius:6px;font-size:1rem;cursor:pointer">',
+          'Close this tab</button>',
+          '</div></div>'
+        ].join('');
+        // Try to auto-close after a moment
+        setTimeout(function(){ try { window.close(); } catch(e){} }, 4000);
+      } else {
+        // ── Same-tab fallback (popup was blocked): show success inline ──
+        var formEl = document.getElementById('booking-form-container');
+        if (formEl) formEl.style.display = 'none';
+        showBookingSuccess();
       }
     } else {
-      // Not a return from Square — show the booking form normally
+      // Normal page load — show the booking form
       var formEl = document.getElementById('booking-form-container');
       if (formEl) formEl.style.display = 'block';
     }
