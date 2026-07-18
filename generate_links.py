@@ -28,7 +28,7 @@ def create_link(date_str, guest_count):
                 "redirect_url": "https://succulentdriftwoods.com.au/?booked=1"
             }
         )
-        return response.payment_link.url
+        return response.payment_link.long_url
     except Exception as e:
         print(f"Error creating link for {date_str} with {guest_count} guests: {e}")
         return None
