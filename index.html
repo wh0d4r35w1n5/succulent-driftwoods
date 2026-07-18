@@ -486,38 +486,22 @@
         gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
       }
 
-      // Notify Linda via Web3Forms — labelled as ATTEMPT, not confirmed
+      // Save booking details to sessionStorage — email fires only after confirmed payment
       var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
       var phone = (document.getElementById('bf-phone').value || '').trim();
-      fetch('https://api.web3forms.com/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
-          subject: 'Booking Attempt (NOT YET PAID) — ' + dateLabel,
-          from_name: 'Succulent Driftwoods Bookings',
-          message: [
-            '⚠️  PAYMENT NOT YET CONFIRMED',
-            'This person has been sent to Square to pay.',
-            'Only treat as a real booking once you receive the Square payment notification.',
-            '─────────────────────────────────────',
-            'DATE: ' + dateLabel,
-            'GUESTS: ' + guestCount + ' x $100 = 
- + (guestCount * 100),
-            'GUEST NAMES:',
-            names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
-            '',
-            'BOOKER NAME: ' + name,
-            'BOOKER EMAIL: ' + email,
-            'BOOKER PHONE: ' + (phone || 'not provided')
-          ].join('\n')
-        })
-      }).catch(function(){});  // never block the redirect
+      sessionStorage.setItem('pendingBooking', JSON.stringify({
+        dateLabel: dateLabel,
+        guestCount: guestCount,
+        names: names,
+        name: name,
+        email: email,
+        phone: phone
+      }));
 
       window.location.href = paymentLinks[date][guestCount];
     };
 
-    // Thank-you banner on return from Square
+    // On return from Square (?booked=1) — payment confirmed, NOW send email to Linda
     if (window.location.search.indexOf('booked=1') !== -1) {
       var s = document.getElementById('book-success');
       var f = document.getElementById('booking-form-container');
@@ -525,6 +509,35 @@
       if (f) f.style.display = 'none';
       setTimeout(function(){ if (s) s.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
       history.replaceState(null, '', location.pathname);
+
+      var booking = null;
+      try { booking = JSON.parse(sessionStorage.getItem('pendingBooking')); } catch(e) {}
+      sessionStorage.removeItem('pendingBooking');
+
+      if (booking) {
+        fetch('https://api.web3forms.com/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
+            subject: 'New Booking CONFIRMED — ' + booking.dateLabel,
+            from_name: 'Succulent Driftwoods Bookings',
+            message: [
+              'PAYMENT CONFIRMED via Square.',
+              '─────────────────────────────────────',
+              'DATE: ' + booking.dateLabel,
+              'GUESTS: ' + booking.guestCount + ' x $100 = 
+ + (booking.guestCount * 100),
+              'GUEST NAMES:',
+              booking.names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
+              '',
+              'BOOKER NAME: ' + booking.name,
+              'BOOKER EMAIL: ' + booking.email,
+              'BOOKER PHONE: ' + (booking.phone || 'not provided')
+            ].join('\n')
+          })
+        }).catch(function(){});
+      }
     }
   })();
   </script>
