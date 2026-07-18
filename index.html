@@ -697,7 +697,7 @@
         fetch(CHECKOUT_WORKER_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guestCount: guestCount, name: name, email: email, phone: phone, dateLabel: dateLabel })
+          body: JSON.stringify({ guestCount: guestCount, name: name, email: email, phone: phone, dateLabel: dateLabel, names: names })
         }).then(function(res) {
           return res.json();
         }).then(function(data) {

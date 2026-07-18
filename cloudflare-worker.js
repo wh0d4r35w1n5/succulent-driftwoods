@@ -63,6 +63,13 @@ export default {
     const firstName = nameParts[0] || '';
     const lastName  = nameParts.slice(1).join(' ') || undefined;
 
+    // Build guest list for Square line item name + payment note
+    // Uses the names[] array from the form if provided, falls back to booker name
+    const guestNames = Array.isArray(body.names) && body.names.filter(Boolean).length > 0
+      ? body.names.filter(Boolean)
+      : [name];
+    const guestListStr = guestNames.join(', ');
+
     // Format Australian phone numbers to E.164 (+61xxxxxxxxx)
     // Square requires E.164 format — local AU numbers start with 04 or 03/02/07/08
     function formatPhone(raw) {
@@ -93,7 +100,8 @@ export default {
 
     const formattedPhone = formatPhone(phone);
 
-    const linkName = `Succulent Driftwood Workshop — ${guests} guest${guests > 1 ? 's' : ''} ($${guests * 100} AUD)${dateLabel ? ' · ' + dateLabel : ''}`;
+    // Item name shown in Linda's Square dashboard against every payment
+    const linkName = `Succulent Driftwood Workshop — ${guestListStr} (${guests * 100} AUD)${dateLabel ? ' · ' + dateLabel : ''}`;
 
     const payload = {
       idempotency_key: `booking-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`,
@@ -102,6 +110,8 @@ export default {
         price_money: { amount: guests * 10000, currency: 'AUD' },
         location_id: LOCATION
       },
+      // Shows on Square checkout page and on the customer's payment receipt
+      payment_note: `Guests: ${guestListStr}`,
       checkout_options: {
         redirect_url: 'https://succulentdriftwoods.com.au/?booked=1',
         ask_for_shipping_address: false,
