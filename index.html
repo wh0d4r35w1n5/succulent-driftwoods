@@ -320,8 +320,8 @@
           </div>
         </div>
         <div class="book-form reveal reveal-delay">
-          <div id="book-success" style="display:none;background:#d4edda;border:1px solid #a3d3a4;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a5c20;font-size:15px;font-weight:500">✓ Payment received — your spot is confirmed! Check your email for a receipt from Square.</div>
-          <div id="booking-form-container">
+          <div id="book-success" style="display:none;background:#d4edda;border:1px solid #a3d3a4;border-radius:8px;padding:18px 20px;margin-bottom:18px;color:#1a5c20;font-size:15px;font-weight:500">✓ Checkout complete — check your email for a payment receipt from Square. Linda will be in touch to confirm your spot. If payment didn't go through, simply book again below.</div>
+          <div id="booking-form-container" style="display:none">
             <div class="form-group" style="margin-bottom:1.5rem">
               <label for="bf-date" style="display:block;margin-bottom:0.5rem;font-weight:600">Select a date *</label>
               <select id="bf-date" style="width:100%;padding:0.8rem;border-radius:6px;border:1px solid #ddd;font-family:inherit;font-size:1rem" required>
@@ -503,7 +503,8 @@
       window.location.href = paymentLinks[date][guestCount];
     };
 
-    // On return from Square (?booked=1) — payment confirmed, NOW send email to Linda
+    // Show the booking form (hidden by default to prevent flash on ?booked=1 pages)
+    // On return from Square (?booked=1) — checkout complete, send email to Linda
     if (window.location.search.indexOf('booked=1') !== -1) {
       var s = document.getElementById('book-success');
       var f = document.getElementById('booking-form-container');
@@ -522,12 +523,12 @@
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({
             access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
-            subject: 'New Booking CONFIRMED — ' + booking.dateLabel,
+            subject: 'New Booking SUBMITTED — ' + booking.dateLabel + ' (verify payment in Square)',
             from_name: 'Succulent Driftwoods Bookings',
             to: 'linda@succulentdriftwoods.com.au',
             
             message: [
-              'PAYMENT CONFIRMED via Square.',
+              'BOOKING SUBMITTED — please check Square Dashboard to confirm payment was received.',
               '─────────────────────────────────────',
               'DATE: ' + booking.dateLabel,
               'GUESTS: ' + booking.guestCount + ' x $100 = $' + (booking.guestCount * 100),
@@ -541,6 +542,10 @@
           })
         }).catch(function(){});
       }
+    } else {
+      // Not a return from Square — show the booking form normally
+      var formEl = document.getElementById('booking-form-container');
+      if (formEl) formEl.style.display = 'block';
     }
   })();
   </script>
