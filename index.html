@@ -554,7 +554,8 @@
     }
     // Submit handler
     document.getElementById('book-submit').onclick = function () {
-      var errEl = document.getElementById('book-err');
+      var errEl    = document.getElementById('book-err');
+      var submitBtn = document.getElementById('book-submit');
       errEl.style.display = 'none';
       // Clear any stale confirmation from a previous session
       localStorage.removeItem('bookingConfirmed');
@@ -571,45 +572,56 @@
       if (!email || !/\S+@\S+\.\S+/.test(email))  { errEl.textContent = 'Please enter a valid email address.'; errEl.style.display = 'block'; return; }
       if (!phone)                                   { errEl.textContent = 'Please enter your mobile number.';    errEl.style.display = 'block'; return; }
 
-      if (!paymentLinks || !paymentLinks[String(guestCount)]) {
-        errEl.textContent = 'Payment links are still loading. Please try again in a moment.';
-        errEl.style.display = 'block';
-        return;
-      }
-
-      var squareUrl = paymentLinks[String(guestCount)];
-      pendingSquareUrl = squareUrl;
-
-      // Save booking details — email fires only after confirmed payment
+      // Save booking details — confirmation email fires only after payment confirmed
       var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
       var bookingData = { dateLabel: dateLabel, guestCount: guestCount, names: names, name: name, email: email, phone: phone };
       localStorage.setItem('pendingBooking', JSON.stringify(bookingData));
 
-      // In-app browsers (Facebook, Instagram, TikTok, etc.) don't support
-      // cross-tab localStorage events, so skip the new-tab flow entirely for them.
       var isInApp = /FBAN|FBAV|Instagram|musical_ly|TikTok|Twitter\/|LinkedInApp|Snapchat|Pinterest\/|Line\/|MicroMessenger|QQ\//i.test(navigator.userAgent);
 
-      if (isInApp) {
-        // Same-tab navigation: Square opens here, returns to ?booked=1, success shown inline
-        window.location.href = squareUrl;
-      } else {
-        // Standard browsers: open Square in a new tab, keep this page visible
-        var newTab = window.open(squareUrl, '_blank');
+      // For standard browsers: open a blank tab IMMEDIATELY (before any async work)
+      // so the browser treats it as a direct user-gesture response — otherwise
+      // popup blockers will kill a window.open() called after an await.
+      var newTab = null;
+      if (!isInApp) {
+        newTab = window.open('', '_blank');
+        if (newTab) {
+          newTab.document.write('<html><body style="font-family:sans-serif;padding:3rem;color:#333"><p style="font-size:1.1rem">⏳ Creating your personalised checkout…</p></body></html>');
+        }
+      }
+
+      // Show loading state on button
+      submitBtn.textContent = 'Creating your checkout… ⏳';
+      submitBtn.disabled = true;
+
+      // Ask our Netlify function to create a fresh Square link with name/email/phone pre-filled.
+      // Falls back to a pre-created link if the function is unavailable.
+      function openSquare(squareUrl) {
+        pendingSquareUrl = squareUrl;
+
+        // Reset button
+        submitBtn.textContent = 'Book & Pay with Square →';
+        submitBtn.disabled = false;
+
+        if (isInApp) {
+          // In-app browsers (Facebook, Instagram, etc.): same-tab navigation
+          window.location.href = squareUrl;
+          return;
+        }
 
         if (newTab) {
-          // New tab opened — show waiting state and listen for payment confirmation
+          // Navigate the already-open blank tab to the Square URL
+          newTab.location.href = squareUrl;
+
+          // Show waiting state on this page
           document.getElementById('booking-form-container').style.display = 'none';
           var waitEl = document.getElementById('book-waiting');
           if (waitEl) waitEl.style.display = 'block';
 
-          // Set up fallback link in case new tab was blocked
           var fallbackLink = document.getElementById('square-link-fallback');
           if (fallbackLink) fallbackLink.href = squareUrl;
 
-          // Listen for cross-tab confirmation via localStorage storage event
-          // AND poll every 1 s as a backup (mobile browsers suspend background tabs
-          // and can miss the storage event; iOS Safari sets window.opener=null in
-          // new tabs so the return tab signals via localStorage regardless).
+          // Poll + storage event for cross-tab payment confirmation
           var confirmPoller = null;
           var bookingStartedAt = Date.now();
           function onPaymentConfirmed() {
@@ -619,7 +631,6 @@
           }
           function onStorageConfirmed(e) {
             if (e.key === 'bookingConfirmed') {
-              // Only accept confirmations set AFTER this booking started
               var ts = parseInt(e.newValue || localStorage.getItem('bookingConfirmed') || '0');
               if (ts > bookingStartedAt) { onPaymentConfirmed(); }
             }
@@ -629,13 +640,42 @@
             var val = localStorage.getItem('bookingConfirmed');
             if (val && parseInt(val) > bookingStartedAt) { onPaymentConfirmed(); }
           }, 1000);
-          // Expose manual confirm for the "I've completed my payment" button
           window.__manualPaymentConfirm = onPaymentConfirmed;
         } else {
-          // Popup blocked — fall back to same-tab navigation
+          // Popup was blocked — fall back to same-tab navigation
           window.location.href = squareUrl;
         }
       }
+
+      function handleError(msg) {
+        submitBtn.textContent = 'Book & Pay with Square →';
+        submitBtn.disabled = false;
+        if (newTab) { try { newTab.close(); } catch(e) {} }
+        errEl.textContent = msg || 'Could not create your checkout. Please try again.';
+        errEl.style.display = 'block';
+      }
+
+      fetch('/.netlify/functions/create-square-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ guestCount: guestCount, name: name, email: email, phone: phone, dateLabel: dateLabel, names: names })
+      }).then(function(res) {
+        return res.json();
+      }).then(function(data) {
+        if (data.url) {
+          openSquare(data.url);
+        } else {
+          // Function returned an error — try pre-created fallback link
+          var fallback = paymentLinks && paymentLinks[String(guestCount)];
+          if (fallback) { openSquare(fallback); }
+          else { handleError('Could not create your checkout. Please try again.'); }
+        }
+      }).catch(function() {
+        // Network error (e.g. not on Netlify) — use pre-created fallback link
+        var fallback = paymentLinks && paymentLinks[String(guestCount)];
+        if (fallback) { openSquare(fallback); }
+        else { handleError('Could not reach the payment service. Please check your connection and try again.'); }
+      });
     };
 
     // ── Handle return from Square (?booked=1) ──
