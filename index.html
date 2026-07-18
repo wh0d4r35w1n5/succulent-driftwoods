@@ -625,6 +625,7 @@
           return;
         }
 
+
         if (newTab) {
           // Navigate the already-open blank tab to the Square URL
           newTab.location.href = squareUrl;
@@ -634,8 +635,7 @@
           var waitEl = document.getElementById('book-waiting');
           if (waitEl) waitEl.style.display = 'block';
 
-          // Populate the booking summary so guest names are visible without
-          // needing to expand anything on Square's checkout page
+          // Populate booking summary — shows guest names without needing to expand Square's accordion
           var summaryEl = document.getElementById('book-waiting-summary');
           if (summaryEl) {
             var guestLines = names.map(function(n, i) {
@@ -645,143 +645,7 @@
               '<div style="font-weight:600;margin-bottom:6px;font-size:13px;text-transform:uppercase;letter-spacing:0.04em;color:#2a5c8c">Your booking</div>',
               '<div style="padding:2px 0">📅 ' + dateLabel + '</div>',
               guestLines,
-              '<div style="padding:4px 0 0;font-weight:600;border-top:1px solid #d0e8f8;margin-top:6px">💰 Total: A
-          if (fallbackLink) fallbackLink.href = squareUrl;
-
-          // Poll + storage event for cross-tab payment confirmation
-          var confirmPoller = null;
-          var bookingStartedAt = Date.now();
-          function onPaymentConfirmed() {
-            if (confirmPoller) { clearInterval(confirmPoller); confirmPoller = null; }
-            window.removeEventListener('storage', onStorageConfirmed);
-            // If pendingBooking is still in localStorage it means the ?booked=1 flow
-            // in the Square tab hasn't already sent the emails (e.g. cross-tab
-            // communication failed, or the customer manually confirmed).
-            // Send both emails now so Linda always gets notified and the customer
-            // always gets their receipt — regardless of how payment was confirmed.
-            try {
-              var pending = localStorage.getItem('pendingBooking');
-              if (pending) {
-                var bk = JSON.parse(pending);
-                localStorage.removeItem('pendingBooking');
-                sendBookingEmail(bk);
-                sendCustomerReceipt(bk);
-              }
-            } catch(e) {}
-            showBookingSuccess();
-          }
-          function onStorageConfirmed(e) {
-            if (e.key === 'bookingConfirmed') {
-              var ts = parseInt(e.newValue || localStorage.getItem('bookingConfirmed') || '0');
-              if (ts > bookingStartedAt) { onPaymentConfirmed(); }
-            }
-          }
-          window.addEventListener('storage', onStorageConfirmed);
-          confirmPoller = setInterval(function() {
-            var val = localStorage.getItem('bookingConfirmed');
-            if (val && parseInt(val) > bookingStartedAt) { onPaymentConfirmed(); }
-          }, 1000);
-          window.__manualPaymentConfirm = onPaymentConfirmed;
-        } else {
-          // Popup was blocked — fall back to same-tab navigation
-          window.location.href = squareUrl;
-        }
-      }
-
-      function handleError(msg) {
-        submitBtn.textContent = 'Book & Pay with Square →';
-        submitBtn.disabled = false;
-        if (newTab) { try { newTab.close(); } catch(e) {} }
-        errEl.textContent = msg || 'Could not create your checkout. Please try again.';
-        errEl.style.display = 'block';
-      }
-
-      function doFallback() {
-        var fallback = paymentLinks[String(guestCount)];
-        if (fallback) { openSquare(fallback); }
-        else { handleError('Could not create your checkout. Please try again.'); }
-      }
-
-      if (CHECKOUT_WORKER_URL) {
-        // Cloudflare Worker available — create a personalised link with pre-filled details
-        fetch(CHECKOUT_WORKER_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ guestCount: guestCount, name: name, email: email, phone: phone, dateLabel: dateLabel, names: names })
-        }).then(function(res) {
-          return res.json();
-        }).then(function(data) {
-          if (data.url) { openSquare(data.url); }
-          else { doFallback(); }
-        }).catch(function() {
-          doFallback();
-        });
-      } else {
-        // No worker configured yet — use embedded fallback link directly
-        doFallback();
-      }
-    };
-
-    // ── Handle return from Square (?booked=1) ──
-    // This runs when Square redirects back to this page after payment.
-    // It may be in a new tab (opened by us) or the same tab (popup-blocked fallback).
-    if (window.location.search.indexOf('booked=1') !== -1) {
-      // Clean up the URL immediately
-      history.replaceState(null, '', location.pathname);
-
-      // Retrieve and clear pending booking
-      var booking = null;
-      try { booking = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
-      localStorage.removeItem('pendingBooking');
-
-      // Send notification email to Linda
-      if (booking) { sendBookingEmail(booking); sendCustomerReceipt(booking); }
-
-      // ── Always signal the original tab via localStorage, regardless of window.opener.
-      //    iOS Safari 14+ sets window.opener=null in new tabs (security policy), so we
-      //    can't rely on it. The original tab's poller checks localStorage every 1 s. ──
-      localStorage.setItem('bookingConfirmed', Date.now().toString());
-      setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 10000);
-
-      if (window.opener && !window.opener.closed) {
-        // ── New-tab flow (desktop / Android): signal done, then close this tab ──
-        // Show a minimal "you can close this tab" message in the new tab
-        document.body.innerHTML = [
-          '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;',
-          'background:#f5faf5;font-family:system-ui,sans-serif;padding:2rem;box-sizing:border-box">',
-          '<div style="text-align:center;max-width:420px">',
-          '<div style="font-size:56px;margin-bottom:1rem">✓</div>',
-          '<h1 style="color:#1a5c20;font-size:1.6rem;margin:0 0 0.75rem">Payment received!</h1>',
-          '<p style="color:#3a7040;font-size:1rem;line-height:1.6;margin:0 0 1.5rem">',
-          'Your spot is confirmed. A booking confirmation has been sent to your email.<br>',
-          'You can close this tab and return to the website.',
-          '</p>',
-          '<button onclick="window.close()" style="background:#2d5a27;color:#fff;border:none;',
-          'padding:0.75rem 2rem;border-radius:6px;font-size:1rem;cursor:pointer">',
-          'Close this tab</button>',
-          '</div></div>'
-        ].join('');
-        // Try to auto-close after a moment
-        setTimeout(function(){ try { window.close(); } catch(e){} }, 4000);
-      } else {
-        // ── Same-tab or iOS Safari (window.opener=null): show success inline here ──
-        // localStorage.bookingConfirmed is already set above so if the original tab
-        // is still open its poller will also show success within ~1 s.
-        var formEl = document.getElementById('booking-form-container');
-        if (formEl) formEl.style.display = 'none';
-        showBookingSuccess();
-      }
-    } else {
-      // Normal page load — show the booking form
-      var formEl = document.getElementById('booking-form-container');
-      if (formEl) formEl.style.display = 'block';
-    }
-  })();
-  </script>
-
-</body>
-</html>
- + (guestCount * 100).toFixed(2) + '</div>'
+              '<div style="padding:4px 0 0;font-weight:600;border-top:1px solid #d0e8f8;margin-top:6px">💰 Total: A$' + (guestCount * 100).toFixed(2) + '</div>'
             ].join('');
           }
 
@@ -794,11 +658,7 @@
           function onPaymentConfirmed() {
             if (confirmPoller) { clearInterval(confirmPoller); confirmPoller = null; }
             window.removeEventListener('storage', onStorageConfirmed);
-            // If pendingBooking is still in localStorage it means the ?booked=1 flow
-            // in the Square tab hasn't already sent the emails (e.g. cross-tab
-            // communication failed, or the customer manually confirmed).
-            // Send both emails now so Linda always gets notified and the customer
-            // always gets their receipt — regardless of how payment was confirmed.
+            // If pendingBooking is still here the ?booked=1 flow hasn't sent emails yet — send now
             try {
               var pending = localStorage.getItem('pendingBooking');
               if (pending) {
@@ -857,7 +717,7 @@
           doFallback();
         });
       } else {
-        // No worker configured yet — use embedded fallback link directly
+        // No worker configured — use embedded fallback link directly
         doFallback();
       }
     };
@@ -877,15 +737,12 @@
       // Send notification email to Linda
       if (booking) { sendBookingEmail(booking); sendCustomerReceipt(booking); }
 
-      // ── Always signal the original tab via localStorage, regardless of window.opener.
-      //    iOS Safari 14+ sets window.opener=null in new tabs (security policy), so we
-      //    can't rely on it. The original tab's poller checks localStorage every 1 s. ──
+      // Always signal the original tab via localStorage
       localStorage.setItem('bookingConfirmed', Date.now().toString());
       setTimeout(function(){ localStorage.removeItem('bookingConfirmed'); }, 10000);
 
       if (window.opener && !window.opener.closed) {
-        // ── New-tab flow (desktop / Android): signal done, then close this tab ──
-        // Show a minimal "you can close this tab" message in the new tab
+        // New-tab flow (desktop / Android): signal done, then close this tab
         document.body.innerHTML = [
           '<div style="min-height:100vh;display:flex;align-items:center;justify-content:center;',
           'background:#f5faf5;font-family:system-ui,sans-serif;padding:2rem;box-sizing:border-box">',
@@ -901,12 +758,9 @@
           'Close this tab</button>',
           '</div></div>'
         ].join('');
-        // Try to auto-close after a moment
         setTimeout(function(){ try { window.close(); } catch(e){} }, 4000);
       } else {
-        // ── Same-tab or iOS Safari (window.opener=null): show success inline here ──
-        // localStorage.bookingConfirmed is already set above so if the original tab
-        // is still open its poller will also show success within ~1 s.
+        // Same-tab or iOS Safari: show success inline
         var formEl = document.getElementById('booking-form-container');
         if (formEl) formEl.style.display = 'none';
         showBookingSuccess();
