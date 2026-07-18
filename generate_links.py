@@ -25,7 +25,10 @@ def create_link(date_str, guest_count):
                 "location_id": location_id
             },
             checkout_options={
-                "redirect_url": "https://succulentdriftwoods.com.au/?booked=1"
+                "redirect_url": "https://succulentdriftwoods.com.au/?booked=1",
+                "custom_fields": [
+                    {"title": "Guest names (please list each guest, one per line)"}
+                ]
             }
         )
         return response.payment_link.long_url
