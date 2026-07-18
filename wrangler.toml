@@ -1,0 +1,4 @@
+# Cloudflare Worker config — run `npx wrangler deploy` from this folder to deploy
+name = "succulent-checkout"
+main = "cloudflare-worker.js"
+compatibility_date = "2024-06-01"

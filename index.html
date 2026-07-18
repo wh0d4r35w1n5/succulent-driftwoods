@@ -415,13 +415,30 @@
   <!-- Payment form: Square payment links (by guest count) -->
   <script>
   (function () {
-    var paymentLinks = null;
     var pendingSquareUrl = null;
 
-    fetch('payment_links.json')
-      .then(function(r){ return r.json(); })
-      .then(function(d){ paymentLinks = d; })
-      .catch(function(e){ console.error('Error loading payment links:', e); });
+    // Fallback payment links — embedded directly so payments always work
+    // even if the site host (Netlify/GitHub Pages) is down or over its limits.
+    // These are reusable Square quick-pay links (Afterpay + Apple/Google Pay enabled,
+    // no coupon box). They don't pre-fill customer details — that's handled by the
+    // Cloudflare Worker below when available.
+    var paymentLinks = {
+      "1":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/wLhWghIl2L9I3vnJsy5o2bkz1edZY",
+      "2":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/WQGep1GpZAfbkwQYk5gGYvWE2VeZY",
+      "3":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/0bsKTkZeAsTs8rCM2VXV7S7QYmTZY",
+      "4":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/iyqV3JwhGgyOAdZuCj39LTBIVnPZY",
+      "5":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/cbOOuYJtnELGt4mMoQ3G8jCttlGZY",
+      "6":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/2qnyyGPBr2fVa5rbsbRbjUYsAeaZY",
+      "7":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/w9mgcGIJ4jqcei3c46TmA1iaJkCZY",
+      "8":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/2mzvV6BSTxDrpHXtKwhhCgTxqPcZY",
+      "9":  "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/cZLRMcUYXDnR8FyOnKC9bgPOiy5YY",
+      "10": "https://checkout.square.site/merchant/MLPY61CFSBDKG/order/Ixm2Uqv1Ve5QZPGczXcCcTf5aJCZY"
+    };
+
+    // Cloudflare Worker URL for personalised checkout (pre-fills name/email/phone).
+    // Set this to your deployed worker URL once you've run `npx wrangler deploy`.
+    // Until then (or if the worker is unreachable) the fallback links above are used.
+    var CHECKOUT_WORKER_URL = '';
 
     // Populate date picker with next 52 Saturdays
     var dateSelect = document.getElementById('bf-date');
@@ -655,27 +672,30 @@
         errEl.style.display = 'block';
       }
 
-      fetch('/.netlify/functions/create-square-checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ guestCount: guestCount, name: name, email: email, phone: phone, dateLabel: dateLabel, names: names })
-      }).then(function(res) {
-        return res.json();
-      }).then(function(data) {
-        if (data.url) {
-          openSquare(data.url);
-        } else {
-          // Function returned an error — try pre-created fallback link
-          var fallback = paymentLinks && paymentLinks[String(guestCount)];
-          if (fallback) { openSquare(fallback); }
-          else { handleError('Could not create your checkout. Please try again.'); }
-        }
-      }).catch(function() {
-        // Network error (e.g. not on Netlify) — use pre-created fallback link
-        var fallback = paymentLinks && paymentLinks[String(guestCount)];
+      function doFallback() {
+        var fallback = paymentLinks[String(guestCount)];
         if (fallback) { openSquare(fallback); }
-        else { handleError('Could not reach the payment service. Please check your connection and try again.'); }
-      });
+        else { handleError('Could not create your checkout. Please try again.'); }
+      }
+
+      if (CHECKOUT_WORKER_URL) {
+        // Cloudflare Worker available — create a personalised link with pre-filled details
+        fetch(CHECKOUT_WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ guestCount: guestCount, name: name, email: email, phone: phone, dateLabel: dateLabel })
+        }).then(function(res) {
+          return res.json();
+        }).then(function(data) {
+          if (data.url) { openSquare(data.url); }
+          else { doFallback(); }
+        }).catch(function() {
+          doFallback();
+        });
+      } else {
+        // No worker configured yet — use embedded fallback link directly
+        doFallback();
+      }
     };
 
     // ── Handle return from Square (?booked=1) ──
