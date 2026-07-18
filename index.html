@@ -508,6 +508,7 @@
           ].join('\n')
         })
       }).catch(function(){});
+    }
 
     // Send booking confirmation email to the customer via web3forms
     function sendCustomerReceipt(booking) {
@@ -586,10 +587,11 @@
 
       if (isInApp) {
         // Same-tab navigation: Square opens here, returns to ?booked=1, success shown inline
-        window.location.href = squareUrl;
+        window.location.href = squareUrl + '?buyer_email=' + encodeURIComponent(email);
       } else {
         // Standard browsers: open Square in a new tab, keep this page visible
-        var newTab = window.open(squareUrl, '_blank');
+        var squareUrlWithEmail = squareUrl + '?buyer_email=' + encodeURIComponent(email);
+        var newTab = window.open(squareUrlWithEmail, '_blank');
 
         if (newTab) {
           // New tab opened — show waiting state and listen for payment confirmation
@@ -599,7 +601,7 @@
 
           // Set up fallback link in case new tab was blocked
           var fallbackLink = document.getElementById('square-link-fallback');
-          if (fallbackLink) fallbackLink.href = squareUrl;
+          if (fallbackLink) fallbackLink.href = squareUrlWithEmail;
 
           // Listen for cross-tab confirmation via localStorage storage event
           window.addEventListener('storage', function onConfirmed(e) {
@@ -610,7 +612,7 @@
           });
         } else {
           // Popup blocked — fall back to same-tab navigation
-          window.location.href = squareUrl;
+          window.location.href = squareUrlWithEmail;
         }
       }
     };
