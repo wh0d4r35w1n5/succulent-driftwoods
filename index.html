@@ -486,7 +486,7 @@
         gtag('event', 'conversion', { 'send_to': 'AW-18308323492/XAciCKSbpdAcEKSxi5pE' });
       }
 
-      // Send booking notification email to Linda via Web3Forms (fire-and-forget)
+      // Notify Linda via Web3Forms — labelled as ATTEMPT, not confirmed
       var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
       var phone = (document.getElementById('bf-phone').value || '').trim();
       fetch('https://api.web3forms.com/submit', {
@@ -494,33 +494,22 @@
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
-          subject: 'New Workshop Booking — ' + dateLabel,
+          subject: 'Booking Attempt (NOT YET PAID) — ' + dateLabel,
           from_name: 'Succulent Driftwoods Bookings',
           message: [
+            '⚠️  PAYMENT NOT YET CONFIRMED',
+            'This person has been sent to Square to pay.',
+            'Only treat as a real booking once you receive the Square payment notification.',
+            '─────────────────────────────────────',
             'DATE: ' + dateLabel,
-            'GUESTS: ' + guestCount + ' × $100 = 
-    };
-
-    // Thank-you banner on return from Square
-    if (window.location.search.indexOf('booked=1') !== -1) {
-      var s = document.getElementById('book-success');
-      var f = document.getElementById('booking-form-container');
-      if (s) s.style.display = 'block';
-      if (f) f.style.display = 'none';
-      setTimeout(function(){ if (s) s.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 100);
-      history.replaceState(null, '', location.pathname);
-    }
-  })();
-  </script>
-
-</body>
-</html>
+            'GUESTS: ' + guestCount + ' x $100 = 
  + (guestCount * 100),
-            'GUEST NAMES:\n' + names.map(function(n, i){ return '  ' + (i+1) + '. ' + n; }).join('\n'),
+            'GUEST NAMES:',
+            names.map(function(n, i){ return '  ' + (i + 1) + '. ' + n; }).join('\n'),
             '',
             'BOOKER NAME: ' + name,
             'BOOKER EMAIL: ' + email,
-            'BOOKER PHONE: ' + (phone || 'not provided'),
+            'BOOKER PHONE: ' + (phone || 'not provided')
           ].join('\n')
         })
       }).catch(function(){});  // never block the redirect
