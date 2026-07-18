@@ -36,14 +36,14 @@ def create_link(date_str, guest_count):
         print(f"Error creating link for {date_str} with {guest_count} guests: {e}")
         return None
 
-# Generate dates for the next 12 Saturdays from this coming Saturday
+# Generate dates for the next 52 Saturdays (1 year) from this coming Saturday
 today = datetime.now()
 days_until_saturday = (5 - today.weekday()) % 7
 if days_until_saturday == 0:
     days_until_saturday = 7  # if today is Saturday, start from next Saturday
 next_saturday = today + timedelta(days=days_until_saturday)
 
-dates = [(next_saturday + timedelta(weeks=i)).strftime('%Y-%m-%d') for i in range(12)]
+dates = [(next_saturday + timedelta(weeks=i)).strftime('%Y-%m-%d') for i in range(52)]
 
 links_data = {}
 for date in dates:

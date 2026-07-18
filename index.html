@@ -413,14 +413,14 @@
       .then(function(d){ paymentLinks = d; })
       .catch(function(e){ console.error('Error loading payment links:', e); });
 
-    // Populate date picker with next 12 Saturdays
+    // Populate date picker with next 52 Saturdays
     var dateSelect = document.getElementById('bf-date');
     var today = new Date();
     var dow = today.getUTCDay();
     var daysUntilSat = dow === 6 ? 7 : (6 - dow + 7) % 7 || 7;
     var nextSat = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() + daysUntilSat));
     var fmt = new Intl.DateTimeFormat('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-    for (var i = 0; i < 12; i++) {
+    for (var i = 0; i < 52; i++) {
       var d = new Date(nextSat);
       d.setUTCDate(nextSat.getUTCDate() + i * 7);
       var iso = d.toISOString().split('T')[0];
@@ -489,7 +489,7 @@
       // Save booking details to sessionStorage — email fires only after confirmed payment
       var dateLabel = document.getElementById('bf-date').options[document.getElementById('bf-date').selectedIndex].text;
       var phone = (document.getElementById('bf-phone').value || '').trim();
-      sessionStorage.setItem('pendingBooking', JSON.stringify({
+      localStorage.setItem('pendingBooking', JSON.stringify({
         dateLabel: dateLabel,
         guestCount: guestCount,
         names: names,
@@ -511,8 +511,8 @@
       history.replaceState(null, '', location.pathname);
 
       var booking = null;
-      try { booking = JSON.parse(sessionStorage.getItem('pendingBooking')); } catch(e) {}
-      sessionStorage.removeItem('pendingBooking');
+      try { booking = JSON.parse(localStorage.getItem('pendingBooking')); } catch(e) {}
+      localStorage.removeItem('pendingBooking');
 
       if (booking) {
         fetch('https://api.web3forms.com/submit', {
@@ -522,7 +522,8 @@
             access_key: 'eb7bb983-1b60-4925-918d-60199d7479b8',
             subject: 'New Booking CONFIRMED — ' + booking.dateLabel,
             from_name: 'Succulent Driftwoods Bookings',
-            cc: 'linda@succulentdriftwoods.com.au,lindaolsen4healing@outlook.com,beauevansict@gmail.com',
+            to: 'linda@succulentdriftwoods.com.au',
+            
             message: [
               'PAYMENT CONFIRMED via Square.',
               '─────────────────────────────────────',
